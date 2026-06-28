@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Pepper Directory</title>
+<style>
+  :root {
+    --bg: #0f0a08;
+    --surface: #1a1008;
+    --surface2: #241510;
+    --border: #3a2010;
+    --accent: #e8420a;
+    --accent2: #f97316;
+    --accent3: #fbbf24;
+    --text: #f5e6d3;
+    --text-muted: #a08060;
+    --text-dim: #6b4a30;
+    --radius: 12px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+
+  header { background: linear-gradient(135deg, #1a0803 0%, #2d0f05 50%, #1a0803 100%); border-bottom: 1px solid var(--border); padding: 2rem 1rem 1.5rem; text-align: center; position: relative; overflow: hidden; }
+  header::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 0%, rgba(232,66,10,0.15) 0%, transparent 70%); }
+  .logo { font-size: 2.8rem; font-weight: 900; letter-spacing: -1px; background: linear-gradient(135deg, #e8420a, #f97316, #fbbf24); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; position: relative; }
+  .tagline { color: var(--text-muted); font-size: 0.95rem; margin-top: 0.3rem; position: relative; }
+  .pepper-count { color: var(--text-dim); font-size: 0.82rem; margin-top: 0.2rem; position: relative; }
+
+  .search-section { max-width: 700px; margin: 2rem auto; padding: 0 1rem; }
+  .search-wrap { position: relative; }
+  .search-wrap input { width: 100%; padding: 1rem 1.2rem 1rem 3.2rem; background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); color: var(--text); font-size: 1.05rem; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
+  .search-wrap input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(232,66,10,0.15); }
+  .search-wrap input::placeholder { color: var(--text-dim); }
+  .search-icon { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); font-size: 1.1rem; pointer-events: none; }
+  .search-clear { position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.2rem; display: none; padding: 0.2rem; }
+  .search-clear.visible { display: block; }
+
+  .filters { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; padding: 0 1rem 1.5rem; }
+  .filter-btn { padding: 0.4rem 1rem; border-radius: 20px; border: 1.5px solid var(--border); background: var(--surface); color: var(--text-muted); font-size: 0.85rem; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+  .filter-btn:hover { border-color: var(--accent2); color: var(--text); }
+  .filter-btn.active { background: var(--accent); border-color: var(--accent); color: white; font-weight: 600; }
+
+  .results-count { text-align: center; color: var(--text-dim); font-size: 0.82rem; margin-bottom: 1rem; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 0.75rem; max-width: 1300px; margin: 0 auto; padding: 0 1rem 3rem; }
+
+  .card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); overflow: hidden; cursor: pointer; transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s; display: flex; flex-direction: column; }
+  .card:hover { transform: translateY(-2px); border-color: var(--accent2); box-shadow: 0 6px 24px rgba(232,66,10,0.18); }
+
+  .card-heat-bar { height: 4px; width: 100%; }
+  .card-body { padding: 0.85rem; flex: 1; display: flex; flex-direction: column; gap: 0.3rem; }
+  .card-name { font-weight: 700; font-size: 0.92rem; line-height: 1.3; }
+  .card-aka { color: var(--text-dim); font-size: 0.72rem; }
+  .card-origin { color: var(--text-muted); font-size: 0.72rem; }
+  .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 0.5rem; }
+  .card-type { font-size: 0.7rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 5px; padding: 0.15rem 0.45rem; color: var(--text-muted); }
+  .shu-badge { font-size: 0.72rem; font-weight: 700; }
+
+  .c-sweet { color: #86efac; }
+  .c-mild { color: #fde68a; }
+  .c-medium { color: #fb923c; }
+  .c-hot { color: #ef4444; }
+  .c-super { color: #c026d3; }
+  .c-extreme { color: #7c3aed; }
+
+  .bar-sweet { background: #4ade80; }
+  .bar-mild { background: #fbbf24; }
+  .bar-medium { background: #fb923c; }
+  .bar-hot { background: #ef4444; }
+  .bar-super { background: #c026d3; }
+  .bar-extreme { background: #7c3aed; }
+
+  .no-results { text-align: center; color: var(--text-muted); padding: 4rem 1rem; grid-column: 1/-1; }
+
+  /* MODAL */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 100; display: none; align-items: flex-start; justify-content: center; padding: 1rem; overflow-y: auto; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border: 1.5px solid var(--border); border-radius: 16px; width: 100%; max-width: 720px; margin: auto; overflow: hidden; position: relative; animation: slideUp 0.2s ease; }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  .modal-heat-bar { height: 5px; width: 100%; }
+  .modal-close { position: absolute; top: 1rem; right: 1rem; background: rgba(0,0,0,0.5); border: none; color: white; width: 34px; height: 34px; border-radius: 50%; font-size: 1.1rem; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; }
+  .modal-close:hover { background: var(--accent); }
+  .modal-body { padding: 1.4rem; }
+  .modal-name { font-size: 1.6rem; font-weight: 800; }
+  .modal-species { font-style: italic; color: var(--text-muted); font-size: 0.88rem; margin-top: 0.1rem; }
+  .modal-aka { color: var(--text-muted); font-size: 0.82rem; margin-top: 0.15rem; }
+
+  .modal-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.65rem; margin: 1.1rem 0; }
+  .stat-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 9px; padding: 0.7rem 0.85rem; }
+  .stat-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); margin-bottom: 0.2rem; }
+  .stat-value { font-weight: 700; font-size: 0.88rem; line-height: 1.3; }
+
+  .shu-meter { margin: 1rem 0; }
+  .shu-meter-label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.35rem; display: flex; justify-content: space-between; }
+  .shu-bar-bg { height: 10px; background: var(--surface2); border-radius: 5px; overflow: hidden; border: 1px solid var(--border); }
+  .shu-bar-fill { height: 100%; border-radius: 5px; }
+
+  .section-title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); margin: 1.2rem 0 0.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.35rem; }
+  .description-text { color: var(--text-muted); font-size: 0.875rem; line-height: 1.6; }
+  .tags { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.4rem; }
+  .tag { background: var(--surface2); border: 1px solid var(--border); border-radius: 5px; padding: 0.2rem 0.55rem; font-size: 0.75rem; color: var(--text-muted); }
+
+  .planting-section { margin-top: 1.3rem; background: var(--surface2); border: 1.5px solid var(--border); border-radius: 10px; padding: 1rem 1.1rem; }
+  .planting-title { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent2); margin-bottom: 0.8rem; }
+  .planting-location { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
+  .planting-location input { flex: 1; padding: 0.5rem 0.75rem; background: var(--bg); border: 1.5px solid var(--border); border-radius: 7px; color: var(--text); font-size: 0.85rem; outline: none; }
+  .planting-location input:focus { border-color: var(--accent2); }
+  .planting-location button { padding: 0.5rem 0.9rem; background: var(--accent); border: none; border-radius: 7px; color: white; font-size: 0.82rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .planting-location button:hover { background: var(--accent2); }
+  .planting-hint { font-size: 0.75rem; color: var(--text-dim); font-style: italic; margin-bottom: 0.8rem; }
+  .planting-result { display: none; }
+  .planting-result.show { display: block; }
+  .planting-zone { font-size: 0.76rem; color: var(--text-muted); margin-bottom: 0.65rem; }
+  .planting-zone strong { color: var(--accent2); }
+  .calendar-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+  .cal-item { background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 0.55rem 0.65rem; }
+  .cal-item-label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-dim); margin-bottom: 0.15rem; }
+  .cal-item-value { font-size: 0.8rem; font-weight: 600; }
+  .cal-span { grid-column: 1/-1; }
+  .cal-notes { font-size: 0.76rem; color: var(--text-muted); margin-top: 0.65rem; line-height: 1.5; border-left: 2px solid var(--accent2); padding: 0.4rem 0.65rem; }
+
+  @media (max-width: 500px) {
+    .modal-stats { grid-template-columns: 1fr 1fr; }
+    .logo { font-size: 2rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🌶️ The Pepper Directory</div>
+  <div class="tagline">Identify, explore, and grow peppers from around the world</div>
+  <div class="pepper-count" id="totalCount"></div>
+</header>
+
+<div class="search-section">
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="Search by name, origin, flavor, heat level…" autocomplete="off">
+    <button class="search-clear" id="searchClear" onclick="clearSearch()">✕</button>
+  </div>
+</div>
+
+<div class="filters">
+  <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+  <button class="filter-btn" onclick="setFilter('sweet',this)">🟢 Sweet (0–500)</button>
+  <button class="filter-btn" onclick="setFilter('mild',this)">🟡 Mild (500–5K)</button>
+  <button class="filter-btn" onclick="setFilter('medium',this)">🟠 Medium (5K–50K)</button>
+  <button class="filter-btn" onclick="setFilter('hot',this)">🔴 Hot (50K–500K)</button>
+  <button class="filter-btn" onclick="setFilter('super',this)">🔥 Super Hot (500K–1.5M)</button>
+  <button class="filter-btn" onclick="setFilter('extreme',this)">💀 Extreme (1.5M+)</button>
+</div>
+
+<div class="results-count" id="resultsCount"></div>
+<div class="grid" id="pepperGrid"></div>
+
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOnOverlay(event)">
+  <div class="modal" id="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-heat-bar" id="modalHeatBar"></div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+const PEPPERS = [
+  // ── SWEET (0–500 SHU) ──────────────────────────────────────────────────────
+  { id:'bell', name:'Bell Pepper', aka:['Sweet Pepper','Capsicum','Traffic Light Pepper'], species:'Capsicum annuum', type:'sweet', origin:'Mexico & Central America', shu:{min:0,max:0}, desc:'The world\'s most-consumed pepper. Green bells are unripe; red, yellow, and orange are fully ripened versions. Red is sweetest and highest in vitamin C. Essential in cuisines worldwide.', flavor:'Sweet, crisp, fresh', uses:['Salads','Stuffed peppers','Stir-fries','Roasting','Fajitas'], days:'70–90', height:'18–36"', colors:'Green → Red/Yellow/Orange', soil:'pH 6.0–6.8, well-drained' },
+  { id:'california-wonder', name:'California Wonder', aka:['Cal Wonder Bell'], species:'Capsicum annuum', type:'sweet', origin:'USA', shu:{min:0,max:0}, desc:'Classic thick-walled bell pepper variety bred in 1928. One of the most widely grown bell pepper cultivars, with large blocky fruits.', flavor:'Sweet, thick-walled, crisp', uses:['Stuffed peppers','Roasting','Fresh eating','Salads'], days:'75–80', height:'24–36"', colors:'Green → Red', soil:'pH 6.0–6.8, fertile' },
+  { id:'yolo-wonder', name:'Yolo Wonder', aka:['Yolo W'], species:'Capsicum annuum', type:'sweet', origin:'USA (UC Davis)', shu:{min:0,max:0}, desc:'Disease-resistant bell pepper bred at UC Davis. Similar to California Wonder but resistant to tobacco mosaic virus. Popular in home gardens.', flavor:'Sweet, mild, blocky', uses:['Stuffed peppers','Fresh eating','Roasting'], days:'72–80', height:'24–30"', colors:'Green → Red', soil:'pH 6.0–6.8' },
+  { id:'corno-di-toro', name:'Corno di Toro', aka:['Bull Horn Pepper','Cow Horn Pepper'], species:'Capsicum annuum', type:'sweet', origin:'Italy', shu:{min:0,max:0}, desc:'Named "bull\'s horn" for its long, curved shape. A beloved Italian frying pepper — thin-walled and sweet. Comes in red and yellow varieties and is central to Italian antipasto.', flavor:'Sweet, fruity, thin-walled', uses:['Italian sautés','Antipasto','Roasting','Frying'], days:'68–75', height:'24–30"', colors:'Green → Red or Yellow', soil:'Well-drained, fertile' },
+  { id:'jimmy-nardello', name:'Jimmy Nardello', aka:['Italian Frying Pepper','Nardello'], species:'Capsicum annuum', type:'sweet', origin:'Calabria, Italy (brought to USA 1887)', shu:{min:0,max:100}, desc:'A Slow Food heritage variety brought to Connecticut by the Nardello family from Calabria in 1887. Long, wrinkled, thin-walled and incredibly sweet. One of the most flavorful sweet peppers in existence.', flavor:'Intensely sweet, raisin-like when fried', uses:['Pan-frying','Antipasto','Preserving','Sautéing'], days:'75–85', height:'24–30"', colors:'Green → Red', soil:'Well-drained, fertile loam' },
+  { id:'shishito', name:'Shishito', aka:['Lion Head Pepper','Manganji Togarashi'], species:'Capsicum annuum', type:'sweet', origin:'Japan', shu:{min:0,max:200}, desc:'Famous for having roughly 1-in-10 pods surprisingly hot while the rest are mild. Extremely popular blistered in a skillet and served with sea salt. Compact, productive plants.', flavor:'Grassy, smoky when charred, occasional surprise heat', uses:['Blistered & salted','Tempura','Stir-fry','Izakaya dishes'], days:'55–65', height:'18–24"', colors:'Green → Red', soil:'pH 6.0–6.8, well-drained' },
+  { id:'friggitello', name:'Friggitello', aka:['Italian Frying Pepper','Sweet Friggitello'], species:'Capsicum annuum', type:'sweet', origin:'Italy & Greece', shu:{min:50,max:200}, desc:'The Italian cousin of the pepperoncini, smaller and sweeter. A staple of Southern Italian cooking, typically pan-fried whole with olive oil and garlic.', flavor:'Sweet, slightly bitter, thin-walled', uses:['Pan-fried whole','Antipasto','Pizza topping'], days:'60–70', height:'18–24"', colors:'Light green → Red', soil:'Well-drained, pH 6.0–6.5' },
+  { id:'banana', name:'Banana Pepper', aka:['Sweet Banana','Yellow Wax Pepper'], species:'Capsicum annuum', type:'sweet', origin:'Hungary', shu:{min:0,max:500}, desc:'Named for its banana-like shape and pale yellow color. Tangy and very mild. One of the most popular pickled peppers in North America — a pizzeria staple.', flavor:'Tangy, mildly sweet, crisp', uses:['Pickling','Pizza topping','Sandwiches','Salads'], days:'65–75', height:'18–24"', colors:'Pale yellow → Orange → Red', soil:'pH 5.5–7.0, well-drained' },
+  { id:'pepperoncini', name:'Pepperoncini', aka:['Golden Greek Pepper','Tuscan Pepper','Friggitello'], species:'Capsicum annuum', type:'sweet', origin:'Italy & Greece', shu:{min:100,max:500}, desc:'Mediterranean staple consumed primarily pickled. The Greek variety tends to be slightly hotter than Italian. Commonly served alongside sandwiches, pizza, and Greek salads.', flavor:'Tangy, briny (pickled), slight sweetness', uses:['Pickling','Pizza topping','Italian beef','Sandwiches','Greek salads'], days:'60–75', height:'24–30"', colors:'Yellow-green → Red', soil:'pH 6.0–6.8, well-drained' },
+  { id:'pimento', name:'Pimento', aka:['Cherry Pepper (sweet)','Pimiento'], species:'Capsicum annuum', type:'sweet', origin:'Spain (introduced from Americas)', shu:{min:100,max:500}, desc:'Heart-shaped sweet pepper used to stuff olives and make pimento cheese. The sweetest of all peppers. Named from the Spanish "pimiento." Very thick, juicy walls.', flavor:'Very sweet, juicy, thick-walled', uses:['Stuffing olives','Pimento cheese','Roasting','Paprika production'], days:'65–70', height:'18–24"', colors:'Green → Red', soil:'Well-drained, fertile' },
+  { id:'aji-dulce', name:'Aji Dulce', aka:['Sweet Habanero','Caribbean Sweet Pepper','Ajicito'], species:'Capsicum chinense', type:'sweet', origin:'Caribbean (Puerto Rico, Venezuela, Dominican Republic)', shu:{min:100,max:500}, desc:'Looks and smells almost identical to a habanero but has virtually no heat. Used throughout the Caribbean as the aromatic base for sofrito. Several distinct landraces exist across different islands.', flavor:'Fruity, floral, habanero aroma — zero heat', uses:['Sofrito','Caribbean cooking','Seasoning base','Sauces'], days:'70–85', height:'24–36"', colors:'Green → Yellow/Orange/Red', soil:'pH 5.5–6.5, tropical' },
+  { id:'trinidad-perfume', name:'Trinidad Perfume', aka:['Perfume Pepper'], species:'Capsicum chinense', type:'sweet', origin:'Trinidad & Tobago', shu:{min:0,max:500}, desc:'A chinense variety bred specifically for flavor without heat. Rich habanero-like aroma with beautiful citrus and tropical notes. Zero heat makes it usable as a habanero flavor substitute.', flavor:'Floral, citrusy, habanero-like aroma, no heat', uses:['Flavoring without heat','Sauces','Caribbean cooking'], days:'75–90', height:'24–30"', colors:'Green → Yellow-orange', soil:'Well-drained, tropical preferred' },
+  { id:'sweet-sunshine', name:'Sweet Sunshine', aka:[], species:'Capsicum annuum', type:'sweet', origin:'USA', shu:{min:0,max:0}, desc:'A modern sweet snacking pepper producing prolific, small, thin-walled fruits. Bred for sweet snack-eating fresh. Extremely productive and compact.', flavor:'Sweet, crunchy, snacking', uses:['Fresh snacking','Crudités','Salads'], days:'60–70', height:'18–24"', colors:'Yellow → Orange → Red', soil:'Well-drained, fertile' },
+  { id:'gorria', name:'Gorria', aka:['Espelette Pepper (base variety)'], species:'Capsicum annuum', type:'sweet', origin:'Basque Country, France/Spain', shu:{min:0,max:400}, desc:'The base variety from which AOC-protected Espelette pepper is made. Grown exclusively in the Espelette commune area. Used fresh, dried, and ground as a cornerstone of Basque cuisine.', flavor:'Mild, sweet, slightly smoky, fruity', uses:['Basque cuisine','Dried & ground spice','Pipérade'], days:'70–80', height:'24–30"', colors:'Green → Red', soil:'Well-drained, Basque climate' },
+
+  // ── MILD (500–5,000 SHU) ───────────────────────────────────────────────────
+  { id:'paprika', name:'Paprika Pepper', aka:['Sweet Paprika','Hungarian Paprika'], species:'Capsicum annuum', type:'mild', origin:'Hungary (via Americas)', shu:{min:250,max:1000}, desc:'The pepper used to produce paprika spice. Hungary and Spain are the world\'s leading producers. Multiple varieties exist ranging from sweet to mildly hot. Paprika production involves drying and grinding the ripe fruit.', flavor:'Mild, peppery, slightly sweet and earthy', uses:['Ground paprika spice','Goulash','Rubs','Stews','Deviled eggs'], days:'65–80', height:'18–30"', colors:'Green → Red', soil:'pH 6.0–7.0, well-drained' },
+  { id:'cubanelle', name:'Cubanelle', aka:['Italian Frying Pepper','Cuban Pepper'], species:'Capsicum annuum', type:'mild', origin:'Cuba (popular in Italy & Eastern Europe)', shu:{min:100,max:1000}, desc:'Thin-walled, ideal for quick frying. Standard in New York-style pizzerias. Becomes tender and sweet when cooked. Preferred over bell peppers in Italian sausage dishes for their thinner walls.', flavor:'Sweet-tangy, thin-walled, becomes silky when cooked', uses:['Italian sausage & peppers','Pizza topping','Frying','Stuffing'], days:'60–70', height:'18–24"', colors:'Light yellow-green → Red', soil:'pH 6.0–6.8, fertile' },
+  { id:'padron', name:'Padrón', aka:['Pimiento de Padrón','Spanish Pepper'], species:'Capsicum annuum', type:'mild', origin:'Padrón, Galicia, Spain (from Mexico)', shu:{min:500,max:2500}, desc:'"Os pementos de Padrón, uns pican e outros non" — some are hot, some are not. About 1-in-10 pods is spicy. The quintessential tapas pepper, blistered in olive oil and finished with flaky sea salt.', flavor:'Grassy, nutty when charred, surprise heat in ~10%', uses:['Tapas (blistered)','Pintxos','With olive oil & sea salt'], days:'60–75', height:'18–24"', colors:'Green (eaten here) → Red', soil:'pH 6.0–6.5, well-drained' },
+  { id:'anaheim', name:'Anaheim', aka:['California Chili','New Mexico Pepper','Hatch Chile'], species:'Capsicum annuum', type:'mild', origin:'New Mexico, USA (moved to Anaheim, CA 1894)', shu:{min:500,max:2500}, desc:'Workhorse of Southwestern US cooking. "Hatch" chiles are Anaheims grown in New Mexico\'s Hatch Valley, known for superior flavor due to local growing conditions. Roasts beautifully — skin blisters easily.', flavor:'Mild, sweet-tangy, earthy when roasted', uses:['Roasting','Green chile sauce','Enchiladas','Canning','Stuffing'], days:'65–75', height:'24–30"', colors:'Green → Red', soil:'pH 6.0–7.0, well-drained' },
+  { id:'poblano', name:'Poblano', aka:['Ancho (dried)','Mulato (dried ripe)'], species:'Capsicum annuum', type:'mild', origin:'Puebla, Mexico', shu:{min:1000,max:2000}, desc:'Mexico\'s most popular pepper by volume. Large, heart-shaped, and meaty. The signature pepper for chiles rellenos. When dried red, becomes an ancho; when ripened fully and dried, becomes a mulato.', flavor:'Rich, earthy, slightly smoky, very mild warmth', uses:['Chiles rellenos','Mole sauce','Rajas con crema','Roasting'], days:'65–80', height:'24–36"', colors:'Dark green → Red/Brown', soil:'pH 6.0–6.8, fertile loam' },
+  { id:'ancho', name:'Ancho', aka:['Dried Poblano','Chile Ancho'], species:'Capsicum annuum', type:'mild', origin:'Puebla, Mexico (dried form)', shu:{min:1000,max:2000}, desc:'The dried form of a red poblano pepper. One of the "Holy Trinity" of Mexican mole chiles (with mulato and pasilla). Wide and flat when dried, with wrinkled dark mahogany skin. Sweet, rich flavor.', flavor:'Sweet raisin-chocolate, mild heat, rich earthiness', uses:['Mole sauces','Enchilada sauce','Adobo','Tamales'], days:'65–80', height:'24–36"', colors:'Green → Red (then dried)', soil:'pH 6.0–6.8' },
+  { id:'pasilla', name:'Pasilla', aka:['Chile Negro','Pasilla Negro'], species:'Capsicum annuum', type:'mild', origin:'Oaxaca & Jalisco, Mexico', shu:{min:1000,max:2500}, desc:'Dried form of the chilaca pepper. Name means "little raisin" — referring to dark color and raisin-like aroma. One of the "Holy Trinity" mole peppers. Long, dark, wrinkled, and complex.', flavor:'Rich chocolate-raisin, earthy, mild heat', uses:['Mole negro','Enchilada sauce','Braised meats','Soups'], days:'75–85', height:'24–30"', colors:'Dark green → Dark brown/Black (dried)', soil:'Well-drained, fertile' },
+  { id:'chilaca', name:'Chilaca', aka:['Pasilla (dried)','Chile Chilaca'], species:'Capsicum annuum', type:'mild', origin:'Mexico (Jalisco, Oaxaca)', shu:{min:1000,max:2500}, desc:'The fresh form of the pasilla pepper. Long, dark green, with a twisted appearance. Rarely used fresh outside Mexico; almost always dried. Sweeter and more complex fresh than when dried.', flavor:'Sweet-earthy, mild, complex fresh flavor', uses:['Fresh sauces','Stews','Dried to make pasilla'], days:'80–90', height:'24–36"', colors:'Dark green → Dark brown', soil:'Well-drained, fertile Mexican soils' },
+  { id:'mulato', name:'Mulato', aka:['Chile Mulato','Ancho Mulato'], species:'Capsicum annuum', type:'mild', origin:'Puebla, Mexico', shu:{min:2500,max:3000}, desc:'A dried pepper — specifically a poblano allowed to ripen to brown before drying. Third member of the "Holy Trinity." Deeper chocolate and licorice notes than ancho, less sweetness.', flavor:'Rich chocolate, licorice, tobacco, earthy mild heat', uses:['Mole negro','Mole mulato','Enchilada sauces','Braising'], days:'80–90', height:'24–36"', colors:'Dark green → Brown-black (dried)', soil:'Fertile, well-drained' },
+  { id:'guajillo', name:'Guajillo', aka:['Mirasol (fresh)','Chile Guajillo'], species:'Capsicum annuum', type:'mild', origin:'North & Central Mexico', shu:{min:2500,max:5000}, desc:'The most widely used dried chile in Mexico. Fresh form called "mirasol" (looks at the sun) grows pointing upward. Essential to birria, pozole, and red enchilada sauce. Cranberry-tart flavor.', flavor:'Fruity-tart, cranberry-like, mild tannic heat', uses:['Birria','Pozole','Red enchilada sauce','Adobo','Tamales'], days:'80–85', height:'30–42"', colors:'Green → Brick red (dried dark)', soil:'pH 6.0–7.5, drought-tolerant' },
+  { id:'peppadew', name:'Peppadew', aka:['Juanita Pepper','Gouqui Pepper'], species:'Capsicum baccatum', type:'mild', origin:'South Africa (Limpopo Province)', shu:{min:1000,max:1200}, desc:'Discovered in 1993 in a South African garden. Now commercially grown and sold pickled in brine. Trademark-protected name. Small, round, sweet-tangy, and only very mildly hot.', flavor:'Sweet, tangy, pickle-brine, mild warmth', uses:['Pickled & stuffed with cheese','Antipasto','Pizza topping','Salads'], days:'70–80', height:'18–24"', colors:'Green → Red', soil:'Well-drained, pH 6.0–7.0' },
+  { id:'cascabel', name:'Cascabel', aka:['Rattle Pepper','Chile Bola'], species:'Capsicum annuum', type:'mild', origin:'Jalisco & Guerrero, Mexico', shu:{min:500,max:2500}, desc:'Named "cascabel" (rattle) because seeds rattle inside when dry. Almost exclusively used dried. Round shape, nutty woodsy flavor, used in Mexican table salsas and soups.', flavor:'Nutty, woodsy, slightly smoky, mild tannic quality', uses:['Table salsas','Soups','Braising sauces','Tamale filling'], days:'75–80', height:'24–30"', colors:'Green → Red (dried dark red-brown)', soil:'Well-drained, fertile' },
+  { id:'espelette', name:'Espelette Pepper', aka:['Piment d\'Espelette'], species:'Capsicum annuum', type:'mild', origin:'Espelette, Basque Country, France', shu:{min:1500,max:2500}, desc:'Holds AOC and PDO protected status — can only be called "Espelette" if grown in 10 specific Basque villages. Hung to dry in ropes on building facades every autumn. A cornerstone of Basque cooking.', flavor:'Warm, fruity, slightly smoky, very mild heat', uses:['Basque cuisine','Axoa','Pipérade','Replacing black pepper','Rubs'], days:'70–80', height:'24–30"', colors:'Green → Red', soil:'Basque coastal clay soils, well-drained' },
+  { id:'kashmiri-chili', name:'Kashmiri Chili', aka:['Kashmiri Mirch','Laal Mirch'], species:'Capsicum annuum', type:'mild', origin:'Kashmir, India', shu:{min:1000,max:2000}, desc:'Prized for their vivid red color more than their heat. Used primarily for the brilliant crimson color they impart to Indian curries, tandoori dishes, and biryanis. Mild enough to use in large quantities.', flavor:'Mild warmth, slightly sweet, fruity, deep red color', uses:['Tandoori marinade','Rogan Josh','Biryani','Color-enhancing curries'], days:'70–85', height:'18–30"', colors:'Green → Deep red', soil:'pH 6.0–7.0, Himalayan foothills' },
+  { id:'biquinho', name:'Biquinho', aka:['Little Beak Pepper','Chupetinho'], species:'Capsicum chinense', type:'mild', origin:'Brazil (Minas Gerais)', shu:{min:500,max:1000}, desc:'Named "little beak" for their distinctive pointed tip. Small, round, and mildly spicy. Extremely popular in Brazil pickled in vinegar and olive oil as a condiment. Have a fruity, aromatic quality.', flavor:'Fruity, tangy, slightly smoky, very mild warmth', uses:['Brazilian pickled condiment','Antipasto','Cheese platters','Pickling'], days:'70–80', height:'24–30"', colors:'Green → Red or Yellow', soil:'Tropical/subtropical, well-drained' },
+  { id:'cherry-bomb', name:'Cherry Bomb', aka:['Hot Cherry Pepper (mild)','Red Cherry Pepper'], species:'Capsicum annuum', type:'mild', origin:'USA', shu:{min:1000,max:3500}, desc:'Thick-walled, round cherry pepper with moderate heat. Popular pickled and sold in jars stuffed with cheese or prosciutto. Different from the hotter cherry peppers — this variety is specifically bred milder.', flavor:'Sweet, thick-walled, mild warmth', uses:['Stuffed with cheese/prosciutto','Pickling','Antipasto'], days:'65–75', height:'18–24"', colors:'Green → Red', soil:'Well-drained, fertile' },
+  { id:'alma', name:'Alma Pepper', aka:['Alma Paprika'], species:'Capsicum annuum', type:'mild', origin:'Hungary', shu:{min:1000,max:1500}, desc:'A small, round Hungarian paprika pepper with a pumpkin-like shape. Unusually thick walls for a paprika variety. Often used fresh or stuffed in addition to grinding for paprika production.', flavor:'Sweet, mild, thick-fleshed, paprika-like', uses:['Fresh eating','Stuffing','Paprika production','Hungarian cuisine'], days:'65–75', height:'18–24"', colors:'Cream/white → Red', soil:'pH 6.0–7.0' },
+  { id:'numex-big-jim', name:'NuMex Big Jim', aka:['Big Jim','Hatch Big Jim'], species:'Capsicum annuum', type:'mild', origin:'New Mexico, USA (NMSU 1975)', shu:{min:500,max:2500}, desc:'World\'s largest chile pepper by length — pods reach 12–13 inches. Bred at New Mexico State University. The definitive Hatch chile for roasting and freezing. Heat varies from mild to medium.', flavor:'Mild, earthy, sweet when roasted', uses:['Roasting','Green chile sauce','Freezing','Stuffing'], days:'75–80', height:'30–36"', colors:'Green → Red', soil:'Well-drained, Southwest US conditions' },
+
+  // ── MEDIUM (5,000–50,000 SHU) ──────────────────────────────────────────────
+  { id:'jalapeno', name:'Jalapeño', aka:['Cuaresmeño','Chipotle (smoked)'], species:'Capsicum annuum', type:'medium', origin:'Veracruz, Mexico', shu:{min:2500,max:8000}, desc:'The world\'s most consumed hot pepper. Heat is concentrated in the white ribs and seeds. When smoked and dried becomes a chipotle. Corking (white lines on skin) indicates a more stressed, often hotter pod.', flavor:'Grassy, bright, moderate heat with slight sweetness', uses:['Nachos','Salsas','Poppers','Pickling','Stuffed','Chipotle'], days:'70–85', height:'24–36"', colors:'Dark green → Red', soil:'pH 6.0–6.8, loamy' },
+  { id:'chipotle', name:'Chipotle', aka:['Smoked Jalapeño','Chipotle Morita','Chipotle Meco'], species:'Capsicum annuum', type:'medium', origin:'Mexico (smoked preservation technique)', shu:{min:5000,max:10000}, desc:'A jalapeño that has been ripened to red, then smoked and dried. Two main types: chipotle meco (tan, dried longer) and chipotle morita (small, dark, smokier). Essential to Mexican adobo sauce.', flavor:'Deeply smoky, earthy, medium heat', uses:['Adobo sauce','Chipotle in adobo cans','Marinades','BBQ sauces'], days:'(jalapeño + smoking process)', height:'24–36"', colors:'Red jalapeño → Smoked brown', soil:'Same as jalapeño' },
+  { id:'fresno', name:'Fresno', aka:['Red Fresno','Fresno Chili'], species:'Capsicum annuum', type:'medium', origin:'Fresno, California, USA (1950s)', shu:{min:2500,max:10000}, desc:'California-bred in the 1950s. Resembles a jalapeño but thinner-walled, fruitier, and typically used ripe-red. Popular with chefs for bright color and complex flavor. Can be hotter than jalapeños.', flavor:'Fruity, sweet-heat, less grassy than jalapeño', uses:['Salsas','Hot sauces','Ceviche','Tacos','Pickling'], days:'70–80', height:'24–30"', colors:'Green → Red', soil:'pH 6.0–7.0, well-drained' },
+  { id:'hungarian-wax', name:'Hungarian Wax', aka:['Hot Banana Pepper','Hungarian Yellow Wax'], species:'Capsicum annuum', type:'medium', origin:'Hungary', shu:{min:1000,max:15000}, desc:'Looks nearly identical to sweet banana pepper but significantly hotter. Heat varies greatly plant-to-plant — a Hungarian roulette. Central to Hungarian cuisine and often used in paprika production or pickling.', flavor:'Tangy, bright, unpredictable heat range', uses:['Pickling','Stuffing','Hungarian cuisine','Sausages'], days:'65–80', height:'18–24"', colors:'Pale yellow → Orange → Red', soil:'pH 6.0–7.0, well-drained' },
+  { id:'serrano', name:'Serrano', aka:['Serrano del Huerto','Serrano Chili'], species:'Capsicum annuum', type:'medium', origin:'Mexican highlands (Puebla & Hidalgo)', shu:{min:10000,max:25000}, desc:'About 3–5× hotter than a jalapeño. Thin-walled, meaty, no need to peel. The second most used fresh chile in Mexico. Preferred raw over cooked for their crisp, bright flavor.', flavor:'Crisp, bright, cleaner heat than jalapeño, slightly more bitter', uses:['Pico de gallo','Guacamole','Salsas','Raw in dishes','Pickling'], days:'65–80', height:'18–24"', colors:'Green → Red/Brown/Yellow', soil:'pH 6.0–7.0, well-drained' },
+  { id:'aleppo', name:'Aleppo Pepper', aka:['Halaby Pepper','Syrian Pepper'], species:'Capsicum annuum', type:'medium', origin:'Aleppo, Syria', shu:{min:5000,max:10000}, desc:'A Syrian heirloom now also grown in Turkey. Seeds removed before drying and then oil-coated. Complex fruity-earthy flavor with moderate heat. A cherished spice in Middle Eastern and Mediterranean cooking.', flavor:'Fruity, raisiny, earthy, moderate heat with low bitterness', uses:['Middle Eastern cooking','Spice rub','Hummus','Eggs','Za\'atar blend'], days:'70–80', height:'24–30"', colors:'Green → Deep red (oiled & dried)', soil:'Semi-arid, well-drained, pH 6.5–7.5' },
+  { id:'de-arbol', name:'Chile de Árbol', aka:['Bird\'s Beak Chili','Rat\'s Tail Chili'], species:'Capsicum annuum', type:'medium', origin:'Jalisco & Nayarit, Mexico', shu:{min:15000,max:30000}, desc:'Named "tree chile" because the plant develops a woody, tree-like stem. Long and thin, almost always used dried. Commonly used to make the oil-based "salsa de árbol" table salsa found at Mexican taquerias.', flavor:'Earthy, grassy, sharp heat with smoky notes', uses:['Salsa de árbol','Taquerias table salsa','Chili oil','Mole','Drying'], days:'80–90', height:'36–48"', colors:'Green → Red', soil:'pH 6.0–7.5, drought-tolerant' },
+  { id:'bishop-crown', name:'Bishop\'s Crown', aka:['Christmas Bell Pepper','Joker\'s Hat','Peri-peri (some regions)'], species:'Capsicum baccatum', type:'medium', origin:'South America (Barbados tradition)', shu:{min:5000,max:15000}, desc:'Distinctive three-winged shape resembling a bishop\'s crown or miter. A baccatum variety offering fruity heat. Used in Caribbean and South American cooking. Ornamentally striking plant.', flavor:'Fruity, tangy, moderate heat with baccatum brightness', uses:['Caribbean sauces','Stuffed','Decorative','Pickling'], days:'70–85', height:'24–36"', colors:'Green → Red/Orange/Yellow', soil:'Well-drained, tropical/subtropical' },
+  { id:'bolivian-rainbow', name:'Bolivian Rainbow', aka:['Rainbow Pepper'], species:'Capsicum annuum', type:'medium', origin:'Bolivia', shu:{min:10000,max:30000}, desc:'A stunning ornamental and edible pepper producing fruits that ripen through multiple colors simultaneously — purple, yellow, orange, and red visible on one plant at the same time. Attractive and tasty.', flavor:'Medium heat, fruity, earthy', uses:['Ornamental gardening','Drying','Salsa','Spice'], days:'75–85', height:'18–24"', colors:'Purple → Yellow → Orange → Red (simultaneously)', soil:'Well-drained, fertile' },
+  { id:'fish-pepper', name:'Fish Pepper', aka:['African American Fish Pepper'], species:'Capsicum annuum', type:'medium', origin:'African-American culinary tradition, Baltimore MD area', shu:{min:5000,max:30000}, desc:'A 19th-century African-American heirloom pepper with creamy white/striped immature fruits that turn red. Used in Baltimore\'s African-American seafood restaurants to season fish and shellfish without adding color.', flavor:'Medium heat, citrusy, complex', uses:['Fish & shellfish seasoning','Hot sauce','African-American heirloom cooking'], days:'70–80', height:'24–30"', colors:'Cream/striped → Red', soil:'Well-drained, fertile' },
+  { id:'peter-pepper', name:'Peter Pepper', aka:['Erotica Pepper','Chili Willy'], species:'Capsicum annuum', type:'medium', origin:'Louisiana & Texas, USA', shu:{min:10000,max:23000}, desc:'Famous for its unmistakable phallic shape. More than a novelty — a legitimately flavorful medium-heat pepper used in Cajun cuisine. Red and yellow varieties exist. Productive and worth growing.', flavor:'Smoky, meaty, clean medium heat', uses:['Cajun cooking','Novelty garnish','Salsas','Grilling'], days:'70–80', height:'18–24"', colors:'Green → Red or Yellow', soil:'pH 6.0–7.0, well-drained' },
+  { id:'gochugaru', name:'Gochugaru Pepper', aka:['Korean Red Pepper','Gochujang Pepper'], species:'Capsicum annuum', type:'medium', origin:'Korea', shu:{min:4000,max:8000}, desc:'The pepper used to make gochugaru flakes and gochujang paste — foundations of Korean cuisine. Mild-medium heat with a sweet, smoky quality. Dried and ground coarse or fine. Essential for kimchi.', flavor:'Sweet, smoky, moderately spicy, slightly fruity', uses:['Kimchi','Gochujang paste','Korean stews','Tteokbokki','Marinades'], days:'70–85', height:'24–30"', colors:'Green → Red', soil:'pH 6.0–6.8, well-drained' },
+  { id:'urfa-biber', name:'Urfa Biber', aka:['Isot Pepper','Urfa Chili'], species:'Capsicum annuum', type:'medium', origin:'Urfa (Şanlıurfa), Turkey', shu:{min:7000,max:10000}, desc:'A Turkish dried chile with an exceptional process: daytime sun-drying followed by nighttime wrapping to sweat the peppers, creating a dark, oily, complex dried flake. Deep wine-red to almost black when processed.', flavor:'Dark, smoky, raisin-chocolate, mild heat with oily richness', uses:['Turkish cuisine','Eggs','Lahmacun','Spice blends','Charcuterie'], days:'70–80', height:'24–30"', colors:'Green → Dark purple-red (dried dark)', soil:'Semi-arid Turkish conditions' },
+  { id:'calabrian', name:'Calabrian Chili', aka:['Peperoncino Calabrese','Italian Hot Pepper'], species:'Capsicum annuum', type:'medium', origin:'Calabria, Italy', shu:{min:25000,max:40000}, desc:'The fiery soul of Southern Italian cooking. Used fresh, dried, or preserved in oil. Ubiquitous in Calabrian \'nduja sausage and chili oil. Italy\'s most heat-forward culinary pepper.', flavor:'Bright, fruity, moderately hot, slightly smoky', uses:['\'Nduja sausage','Chili oil','Pizza','Pasta','Preserved in olive oil'], days:'65–75', height:'18–24"', colors:'Green → Red', soil:'Mediterranean, well-drained, alkaline' },
+  { id:'tabasco', name:'Tabasco Pepper', aka:['Tabasco Chili'], species:'Capsicum frutescens', type:'medium', origin:'Tabasco, Mexico (cultivated in Louisiana)', shu:{min:30000,max:50000}, desc:'The pepper behind the McIlhenny Tabasco sauce made on Avery Island, Louisiana since 1868. Unique: fruits become hollow when ripe and fill with liquid, making them ideal for hot sauce production.', flavor:'Vinegary, tangy, sharp heat', uses:['Tabasco sauce','Bloody Mary','Hot sauces','Cooking'], days:'80–85', height:'36–48"', colors:'Yellow → Orange → Red', soil:'Rich, moist, pH 6.0–6.5' },
+  { id:'cayenne', name:'Cayenne', aka:['Guinea Pepper','Red Pepper','Bird Pepper'], species:'Capsicum annuum', type:'medium', origin:'French Guiana (named after Cayenne city)', shu:{min:30000,max:50000}, desc:'One of the world\'s most widely used spice peppers. Primarily consumed ground-dried. A staple in American, Indian, Mexican, Thai, and African cuisines. Also used medicinally for capsaicin content.', flavor:'Earthy, sharp, clean heat', uses:['Ground spice','Hot sauces','Pizza','Curries','Medicinal'], days:'70–80', height:'24–36"', colors:'Green → Red', soil:'pH 6.0–6.8, sandy loam' },
+  { id:'aji-amarillo', name:'Aji Amarillo', aka:['Yellow Chili','Aji Escabeche','Cusqueño'], species:'Capsicum baccatum', type:'medium', origin:'Peru & Bolivia', shu:{min:30000,max:50000}, desc:'Called the "soul of Peruvian cooking." Despite the name (amarillo = yellow), it turns orange when ripe. The fruity sweetness and heat make it unlike any other pepper. Irreplaceable in Peruvian cuisine.', flavor:'Fruity (mango-like), raisin notes, bright persistent heat', uses:['Causa Limeña','Aji de Gallina','Ceviche','Peruvian sauces','Anticucho'], days:'80–100', height:'36–48"', colors:'Green → Orange-yellow', soil:'pH 6.0–7.0, fertile' },
+  { id:'aji-colorado', name:'Aji Colorado', aka:['Red Aji','Aji Rojo'], species:'Capsicum baccatum', type:'medium', origin:'Peru & Bolivia', shu:{min:15000,max:30000}, desc:'A baccatum variety similar to aji amarillo but red when ripe. Used in Andean cooking both fresh and dried. Part of the same family of Peruvian culinary peppers fundamental to local cuisine.', flavor:'Fruity, slightly sweet, moderate heat', uses:['Peruvian cooking','Sauces','Dried spice'], days:'80–100', height:'30–42"', colors:'Green → Red', soil:'Andean conditions, well-drained' },
+  { id:'santaka', name:'Santaka', aka:['Japanese Hot Pepper'], species:'Capsicum annuum', type:'medium', origin:'Japan', shu:{min:40000,max:50000}, desc:'A traditional Japanese hot pepper producing small, thin, upright pods. Used dried in Japanese and Asian cooking. Compact plant that produces abundantly. Similar to de árbol but from Japan.', flavor:'Sharp, clean, earthy heat', uses:['Japanese cooking','Drying','Spice oils','Asian stir-fries'], days:'70–80', height:'18–24"', colors:'Green → Red', soil:'Well-drained, fertile' },
+  { id:'lemon-drop', name:'Lemon Drop', aka:['Kellu Uchu','Aji Lemon','Aji Lemon Drop'], species:'Capsicum baccatum', type:'medium', origin:'Peru', shu:{min:15000,max:30000}, desc:'Genuinely lemony aroma and flavor — the citrus character is remarkably authentic. Vivid yellow when ripe. Becoming popular in craft hot sauces for its unique flavor. A South American treasure.', flavor:'Bright citrus (lemon/lime), clean moderate heat', uses:['Peruvian cooking','Craft hot sauces','Ceviche','Marinades'], days:'80–95', height:'30–42"', colors:'Green → Lemon yellow', soil:'pH 6.0–6.8, fertile, well-drained' },
+  { id:'tien-tsin', name:'Tien Tsin', aka:['Tianjin Pepper','Chinese Red Pepper'], species:'Capsicum annuum', type:'medium', origin:'Tianjin, China', shu:{min:45000,max:75000}, desc:'The primary hot pepper used in Chinese-American cooking — the red peppers you see in Kung Pao Chicken and General Tso\'s. Dried and used whole or crushed. Named after Tianjin where it was historically traded.', flavor:'Sharp, smoky, earthy heat', uses:['Kung Pao Chicken','Mapo Tofu','Chinese stir-fries','Chili oil'], days:'75–85', height:'24–30"', colors:'Green → Red', soil:'Well-drained, Chinese agricultural soils' },
+  { id:'jwala', name:'Jwala', aka:['Indian Finger Hot Pepper','Jwala Mirchi'], species:'Capsicum annuum', type:'medium', origin:'Gujarat, India', shu:{min:20000,max:30000}, desc:'The most popular fresh hot pepper in India. "Jwala" means "volcano" or "flame" in Sanskrit. Finger-shaped, wrinkled, and used extensively across Indian cuisine. Backbone of Indian green chili cooking.', flavor:'Bright, grassy, sharp heat', uses:['Indian curries','Green chutney','Stir-fries','Pickles','Fresh use'], days:'65–80', height:'24–36"', colors:'Green → Red', soil:'Well-drained, South Asian tropical conditions' },
+  { id:'guntur-sannam', name:'Guntur Sannam', aka:['S4 Chili','Guntur Chili'], species:'Capsicum annuum', type:'medium', origin:'Guntur District, Andhra Pradesh, India', shu:{min:25000,max:40000}, desc:'India\'s most important commercial chili export. The Guntur district of Andhra Pradesh produces roughly 30% of India\'s chili output. Deep red, thin-walled, very pungent — the backbone of Andhra cuisine.', flavor:'Pungent, sharp, earthy, intense heat', uses:['Andhra cooking','Chili powder','Pickles','Export spice'], days:'70–85', height:'24–36"', colors:'Green → Deep red', soil:'Black cotton soil, Andhra conditions' },
+  { id:'malagueta', name:'Malagueta', aka:['Brazilian Hot Pepper'], species:'Capsicum frutescens', type:'medium', origin:'Brazil (possibly from Africa via Portuguese)', shu:{min:60000,max:100000}, desc:'Essential to Brazilian cuisine, especially the state of Bahia. Small, intensely hot pods used fresh and pickled. The main pepper in cachaça-based hot sauce served at Brazilian restaurants. Not to be confused with African grains of paradise.', flavor:'Sharp, bright, intensely hot', uses:['Brazilian hot sauce','Moqueca','Caipirinha pairing','Pickling'], days:'70–85', height:'24–36"', colors:'Green → Red', soil:'Tropical, humid conditions' },
+  { id:'aji-charapita', name:'Aji Charapita', aka:['Wild Charapita','Wild Yellow Chili'], species:'Capsicum frutescens', type:'medium', origin:'Amazon Rainforest, Peru', shu:{min:30000,max:50000}, desc:'One of the world\'s rarest and most expensive peppers by weight. Tiny yellow spheres the size of peas. Grows wild in Peru\'s Amazon jungle. Each plant can produce thousands of fruits. Has fetched over $25,000/kg.', flavor:'Citrusy, fruity, tropical, clean persistent heat', uses:['Peruvian Amazon cuisine','Hot sauces','Condiment oils'], days:'90–120', height:'36–60"', colors:'Green → Yellow', soil:'Rich, humid jungle-like soil, tropical' },
+  { id:'dundicut', name:'Dundicut', aka:['Reshampatta','Sichuan Pepper (confused)'], species:'Capsicum annuum', type:'medium', origin:'Sindh, Pakistan', shu:{min:55000,max:65000}, desc:'A round, dark red Pakistani chili with concentric rings near the stem. Central to Pakistani and Sindhi cooking. Used dried and ground. Slightly sweet flavor beneath the significant heat.', flavor:'Fruity, slightly sweet, pungent heat', uses:['Pakistani cuisine','Sindhi curry','Biryani spice','Ground chili'], days:'75–85', height:'18–24"', colors:'Green → Deep red', soil:'Arid/semi-arid, Pakistani conditions' },
+  { id:'cherry-hot', name:'Hot Cherry Pepper', aka:['Hungarian Cherry Pepper','Pimento (hot type)'], species:'Capsicum annuum', type:'medium', origin:'Hungary', shu:{min:2500,max:5000}, desc:'Round, bright red cherry peppers with moderate heat. Popular stuffed with cheese or prosciutto and pickled in vinegar. Different from the mild cherry bomb variety. Thick-walled and meaty.', flavor:'Sweet-spicy, thick-walled, juicy', uses:['Stuffed with cheese','Antipasto','Pickling','Italian delis'], days:'65–75', height:'18–24"', colors:'Green → Red', soil:'pH 6.0–7.0, well-drained' },
+  { id:'santa-fe-grande', name:'Santa Fe Grande', aka:['Yellow Hot Chili','Guero Chili'], species:'Capsicum annuum', type:'medium', origin:'New Mexico, USA', shu:{min:5000,max:10000}, desc:'A versatile yellow wax pepper that transitions through yellow, orange, and red. Medium heat and used extensively in Southwestern US cooking. Often confused with banana peppers but noticeably hotter.', flavor:'Tangy, slightly sweet, medium heat', uses:['Southwestern cooking','Pickling','Salsas','Roasting'], days:'65–75', height:'24–30"', colors:'Yellow → Orange → Red', soil:'Well-drained, Southwestern US' },
+  { id:'thai-birds-eye', name:"Thai Bird's Eye", aka:['Prik Kee Noo','Bird Chili','Mouse Dropping Chili'], species:'Capsicum frutescens', type:'medium', origin:'Southeast Asia', shu:{min:50000,max:100000}, desc:'Tiny but ferociously hot. Central to Thai, Lao, Vietnamese, and Cambodian cooking. Grows pointing upward unlike most peppers. Perennial in tropical climates; plants can live many years.', flavor:'Bright, sharp, piercing heat with earthy notes', uses:['Thai curries','Pad Thai','Sambal','Nam Prik','Stir-fries'], days:'65–80', height:'18–30"', colors:'Green → Red (or yellow)', soil:'Tropical, rich, well-drained' },
+  { id:'prik-kee-nu', name:'Prik Kee Nu Suan', aka:['Mouse Dropping Pepper','Super Bird Chili'], species:'Capsicum frutescens', type:'medium', origin:'Thailand', shu:{min:30000,max:50000}, desc:'A specific Thai variety of bird\'s eye chili — smaller and even more pungent than the standard Thai bird. Name literally means "mouse dropping pepper" for its tiny size. Common in Thai street food.', flavor:'Intensely sharp, immediate heat', uses:['Thai street food','Larb','Som Tam','Nam Jim'], days:'60–75', height:'18–24"', colors:'Green → Red', soil:'Tropical, well-drained' },
+  { id:'chiltepin', name:'Chiltepin', aka:['Chiltepín','Tepin','Bird Pepper (USA)'], species:'Capsicum annuum var. glabriusculum', type:'medium', origin:'Sonora, Mexico & Southwestern USA (wild)', shu:{min:50000,max:100000}, desc:'The wild ancestor of many cultivated peppers and the only pepper native to the United States. Grows wild in the Sonoran Desert. State native plant of Texas. Small round berry-like fruits with fast, intense heat.', flavor:'Instant intense heat that dissipates quickly, earthy, smoky', uses:['Sonoran Mexican cooking','Wild harvest','Salsa','Dried spice'], days:'85–100 (slow from seed)', height:'24–48" (wild shrubs larger)', colors:'Green → Red', soil:'Arid desert conditions, very well-drained' },
+  { id:'pequin', name:'Pequin', aka:['Piquín','Chile Mosquito','Piquin'], species:'Capsicum annuum var. glabriusculum', type:'medium', origin:'Mexico & Southern USA', shu:{min:40000,max:60000}, desc:'Tiny oval peppers closely related to chiltepin. One of the most-used dried peppers in Mexico\'s northern states. Intensely hot for their size. Name means "small" in Spanish.', flavor:'Sharp, smoky heat, slightly fruity', uses:['Northern Mexican cooking','Dried spice','Chili powder','Table salsas'], days:'85–100', height:'18–36"', colors:'Green → Red', soil:'Dry, well-drained soils' },
+  { id:'aji-limo', name:'Aji Limo', aka:['Aji Lemon','Limo Pepper'], species:'Capsicum chinense', type:'medium', origin:'Peru (northern coastal region)', shu:{min:50000,max:100000}, desc:'One of the traditional Peruvian native peppers. Distinctive citrus aroma. The most used pepper in northern Peruvian ceviche. More aromatic and complex than most peppers at this heat level.', flavor:'Citrusy, tropical, intense but aromatic heat', uses:['Northern Peruvian ceviche','Salsas','Peruvian sauces'], days:'80–100', height:'30–42"', colors:'Green → Yellow/Orange/Red', soil:'Coastal Peruvian conditions, well-drained' },
+  { id:'rocoto', name:'Rocoto', aka:['Manzano','Locoto','Apple Pepper'], species:'Capsicum pubescens', type:'medium', origin:'Andean South America (Peru, Bolivia)', shu:{min:30000,max:100000}, desc:'Unique among cultivated peppers: black seeds, purple flowers, thick apple-like walls. The only domesticated pepper that won\'t cross with other species. Thrives at high altitudes where other peppers fail. Can be a perennial in cool climates.', flavor:'Thick, juicy, fruity with significant heat', uses:['Rocoto relleno (stuffed)','Andean sauces','Salsa criolla'], days:'85–100', height:'24–48"', colors:'Green → Red/Orange/Yellow', soil:'High altitude, fertile, cooler soils' },
+
+  // ── HOT (50,000–500,000 SHU) ───────────────────────────────────────────────
+  { id:'piri-piri', name:'Piri Piri', aka:['Peri Peri','African Bird\'s Eye','African Devil'], species:'Capsicum frutescens', type:'hot', origin:'East Africa & Portugal (Mozambique)', shu:{min:50000,max:175000}, desc:'Brought to Africa by Portuguese explorers in the 15th century, adopted into Mozambican and South African culture. The base of Nando\'s peri-peri sauce worldwide. Used in Portuguese and African-fusion cooking.', flavor:'Citrusy, bright, sharp heat, slightly herbal', uses:['Peri-peri sauce','Grilled chicken','Marinades','African stews'], days:'70–85', height:'18–30"', colors:'Green → Red', soil:'Sandy loam, well-drained' },
+  { id:'kanthari', name:'Kanthari', aka:['White Kanthari','Kerala Bird Chili'], species:'Capsicum frutescens', type:'hot', origin:'Kerala, India', shu:{min:50000,max:100000}, desc:'The prized hot pepper of Kerala, South India. White (unripe) kanthari is particularly sought-after for its bright, clean heat. Used in Kerala\'s fish curries and chutneys. Considered more flavorful than red kanthari.', flavor:'Clean, immediate sharp heat, slightly grassy', uses:['Kerala fish curry','Chutneys','Pickles','South Indian cuisine'], days:'65–80', height:'18–30"', colors:'White/cream → Red', soil:'Humid tropical, Kerala conditions' },
+  { id:'charleston-hot', name:'Charleston Hot', aka:['Charleston Cayenne'], species:'Capsicum annuum', type:'hot', origin:'Charleston, South Carolina, USA', shu:{min:70000,max:100000}, desc:'A hotter cayenne variety developed specifically for commercial hot sauce production. Produces abundant, long thin fruits. Popular with home growers who want more heat than standard cayenne.', flavor:'Sharp cayenne heat, earthy', uses:['Hot sauces','Drying','Cayenne substitute','Spice'], days:'70–80', height:'24–36"', colors:'Green → Orange-yellow', soil:'Well-drained, fertile' },
+  { id:'carolina-cayenne', name:'Carolina Cayenne', aka:[], species:'Capsicum annuum', type:'hot', origin:'North Carolina, USA', shu:{min:80000,max:125000}, desc:'A significantly hotter cayenne selection than standard varieties. Developed for commercial pepper sauce production. Fruits are typical cayenne shape but with much more heat due to selective breeding.', flavor:'Intense cayenne-type heat, clean, sharp', uses:['Hot sauce production','Drying','Spice'], days:'70–80', height:'24–36"', colors:'Green → Red', soil:'Well-drained, fertile' },
+  { id:'habanero-orange', name:'Habanero (Orange)', aka:['Abanero','Common Habanero'], species:'Capsicum chinense', type:'hot', origin:'Amazon Basin, cultivated in Yucatán Mexico', shu:{min:100000,max:350000}, desc:'The most recognized habanero. Distinctive lantern shape, waxy orange skin, and extreme fruity aroma alongside intense heat. Essential in Yucatán cuisine. The orange color and fruity complexity is unmistakable.', flavor:'Fruity, floral, tropical fruit, intense heat', uses:['Hot sauces','Caribbean marinades','Yucatán salsas','Jerk'], days:'75–100', height:'24–36"', colors:'Green → Orange', soil:'Sandy loam, well-drained, pH 5.5–7.0' },
+  { id:'habanero-red', name:'Habanero (Red)', aka:['Red Habanero'], species:'Capsicum chinense', type:'hot', origin:'Caribbean / Yucatán, Mexico', shu:{min:150000,max:350000}, desc:'A fully ripe habanero allowed to turn red. Slightly hotter than the orange variety. More complex, slightly less fruity and more earthy. Used interchangeably with orange habanero but with a bit more depth.', flavor:'Fruity but earthier than orange, intense heat', uses:['Hot sauces','Salsas','Marinades'], days:'80–105', height:'24–36"', colors:'Green → Red', soil:'Well-drained, tropical preferred' },
+  { id:'habanero-chocolate', name:'Habanero (Chocolate)', aka:['Black Congo','Jamaican Chocolate','Cuba Brown'], species:'Capsicum chinense', type:'hot', origin:'Trinidad & Jamaica', shu:{min:300000,max:425000}, desc:'Significantly hotter than orange habanero with a more complex, smoky-earthy flavor. Brown color from concentrated anthocyanins. Used in Caribbean cooking where extreme heat is embraced.', flavor:'Smoky, earthy, chocolate-like, extreme heat', uses:['Caribbean cooking','Extreme hot sauces','Jerk spice'], days:'85–100', height:'24–36"', colors:'Green → Chocolate brown', soil:'Well-drained, fertile' },
+  { id:'habanero-white', name:'Habanero (White)', aka:['Peruvian White Habanero','White Bullet Habanero'], species:'Capsicum chinense', type:'hot', origin:'Peru / Caribbean', shu:{min:100000,max:350000}, desc:'A rare white-cream colored habanero variety. Visually striking and conversation-starting. Similar heat to orange habanero but slightly different flavor — often described as more fruity and less floral.', flavor:'Fruity, slightly more citrusy than orange habanero', uses:['Specialty hot sauces','Ornamental growing','Salsas'], days:'85–100', height:'24–36"', colors:'Green → Cream-white', soil:'Well-drained, tropical preferred' },
+  { id:'scotch-bonnet', name:'Scotch Bonnet', aka:['Bonney Pepper','Caribbean Red Pepper','Boabs Bonnet'], species:'Capsicum chinense', type:'hot', origin:'Caribbean Islands', shu:{min:100000,max:350000}, desc:'The defining pepper of Caribbean cuisine, named for its resemblance to a Scottish tam o\'shanter hat. Nearly identical in heat to habanero but sweeter and more tropical. Essential in jerk seasoning.', flavor:'Sweet, tropical fruit (mango/cherry), intense heat', uses:['Jerk seasoning','Caribbean sauces','Pepper sauce','Stews'], days:'80–100', height:'24–36"', colors:'Green → Red/Orange/Yellow', soil:'Well-drained, loamy, pH 5.5–6.5' },
+  { id:'scotch-bonnet-yellow', name:'Scotch Bonnet (Yellow)', aka:['Yellow Scotch Bonnet'], species:'Capsicum chinense', type:'hot', origin:'Caribbean Islands', shu:{min:125000,max:300000}, desc:'A yellow variant of the scotch bonnet with a sweeter, more tropical flavor than the red. Extremely popular in Jamaican and Trinidadian cooking. Slightly milder than red scotch bonnets.', flavor:'Sweeter, more tropical than red scotch bonnet', uses:['Jamaican cooking','Pepper sauces','Jerk'], days:'80–100', height:'24–36"', colors:'Green → Yellow', soil:'Tropical/subtropical, well-drained' },
+  { id:'madame-jeanette', name:'Madame Jeanette', aka:['Suriname Yellow','Surinam Yellow Pepper'], species:'Capsicum chinense', type:'hot', origin:'Suriname', shu:{min:150000,max:350000}, desc:'A Surinamese habanero-type pepper popular in Dutch kitchens due to Suriname\'s former colonial relationship with the Netherlands. Fruity and very hot. Often confused with habaneros but has a distinct flavor profile.', flavor:'Fruity, floral, tropical, habanero-level heat', uses:['Surinamese cuisine','Dutch-Surinamese cooking','Hot sauces'], days:'80–100', height:'24–36"', colors:'Green → Yellow', soil:'Tropical, well-drained' },
+  { id:'datil', name:'Datil', aka:['St. Augustine Pepper'], species:'Capsicum chinense', type:'hot', origin:'St. Augustine, Florida, USA', shu:{min:100000,max:300000}, desc:'One of the world\'s most geographically localized peppers — almost exclusively grown in St. Augustine, FL. Local legend traces it to a Minorcan settlement of 1777. Sweet and fruity like a habanero but distinctive.', flavor:'Sweet fruity (peach/apricot), habanero-level heat', uses:['Datil pepper sauce','Minorcan clam chowder','Florida cuisine'], days:'85–100', height:'30–36"', colors:'Green → Yellow-orange', soil:'Florida conditions, well-drained, pH 5.5–7.0' },
+  { id:'adjuma', name:'Adjuma', aka:['Ojembo Pepper'], species:'Capsicum chinense', type:'hot', origin:'Suriname & French Guiana', shu:{min:100000,max:500000}, desc:'A Surinamese and French Guianese chinense variety with enormous heat range. Squashed appearance, similar to a habanero but more wrinkled. Used extensively in South American Caribbean-coast cooking.', flavor:'Fruity, earthy, wide-ranging heat', uses:['Surinamese cooking','Hot sauces','Stews'], days:'85–100', height:'24–36"', colors:'Green → Red/Orange', soil:'Tropical, humid' },
+  { id:'red-savina', name:'Red Savina Habanero', aka:['Red Savina','Habanero Red Savina'], species:'Capsicum chinense', type:'hot', origin:'Frank Garcia, California, USA', shu:{min:350000,max:577000}, desc:'Held the Guinness World Record as hottest pepper from 1994–2006. Developed by Frank Garcia in California as a selectively bred habanero variety. Significantly hotter than standard habanero while maintaining fruity flavor.', flavor:'Fruity habanero aroma, extreme heat', uses:['Extreme hot sauces','Record-chasing','Specialty cooking'], days:'85–100', height:'24–36"', colors:'Green → Deep red', soil:'Well-drained, fertile, full sun' },
+  { id:'caribbean-red', name:'Caribbean Red Habanero', aka:['Caribbean Red Pepper'], species:'Capsicum chinense', type:'hot', origin:'Caribbean', shu:{min:300000,max:445000}, desc:'Up to twice as hot as an orange habanero. A separate habanero variety rather than just a ripe orange one. Bright red, small, and intensely potent. Popular in Caribbean hot sauces.', flavor:'Fruity, very intense habanero heat', uses:['Caribbean hot sauces','Jerk','Marinades'], days:'80–100', height:'24–36"', colors:'Green → Bright red', soil:'Tropical, well-drained' },
+  { id:'fatalii-yellow', name:'Fatalii (Yellow)', aka:['Yellow Fatalii'], species:'Capsicum chinense', type:'hot', origin:'Central Africa', shu:{min:125000,max:400000}, desc:'A Central African chinense variety with exceptional citrus aroma. Extremely fruity — yellow color, vibrant lemon-citrus notes, and ferocious heat. One of the most flavorful superhot-level peppers.', flavor:'Intense citrus-lemon, fruity, extreme heat', uses:['African cooking','Extreme hot sauces','Specialty cuisine'], days:'85–100', height:'24–36"', colors:'Green → Yellow', soil:'Well-drained, fertile, humid' },
+  { id:'fatalii-red', name:'Fatalii (Red)', aka:['Red Fatalii'], species:'Capsicum chinense', type:'hot', origin:'Central Africa', shu:{min:125000,max:400000}, desc:'The red form of the fatalii. Still intensely citrusy and fruity but with a slightly different depth. Equally scorching heat. Central African peppers of this type are less well-documented than their Caribbean relatives.', flavor:'Citrusy-fruity, extreme heat', uses:['Hot sauces','African cuisine'], days:'85–100', height:'24–36"', colors:'Green → Red', soil:'Well-drained, tropical' },
+  { id:'devil-tongue', name:"Devil's Tongue", aka:["Devil's Tongue Yellow/Red"], species:'Capsicum chinense', type:'hot', origin:'Pennsylvania, USA (Amish community)', shu:{min:300000,max:500000}, desc:'Discovered in an Amish community in Lancaster County, Pennsylvania. Long, wrinkled, pointed shape resembling a tongue. Believed to be a natural fatalii variant. Yellow is most common; red and chocolate varieties also exist.', flavor:'Fruity, citrusy, habanero-family extreme heat', uses:['Extreme hot sauces','Specialty cooking'], days:'85–100', height:'24–36"', colors:'Green → Yellow or Red', soil:'Well-drained, fertile Pennsylvania-type' },
+  { id:'bahamian-goat', name:'Bahamian Goat Pepper', aka:['Goat Pepper'], species:'Capsicum chinense', type:'hot', origin:'Bahamas', shu:{min:100000,max:300000}, desc:'A Caribbean chinense variety traditional to the Bahamas. Wrinkled, gourd-like shape. Hot with fruity undertones. Used in traditional Bahamian cooking and hot sauces. Less well-known globally but important locally.', flavor:'Fruity, spicy, habanero-family', uses:['Bahamian cuisine','Hot sauces','Marinades'], days:'80–100', height:'24–36"', colors:'Green → Yellow/Orange/Red', soil:'Tropical sandy, well-drained' },
+  { id:'jamaican-hot', name:'Jamaican Hot', aka:['Jamaican Hot Red','Jamaican Hot Yellow'], species:'Capsicum chinense', type:'hot', origin:'Jamaica', shu:{min:100000,max:250000}, desc:'Traditional Jamaican chinense variety distinct from scotch bonnet. Elongated rather than squat shape. Used in Jamaican cooking alongside scotch bonnets. Both red and yellow strains exist.', flavor:'Fruity, slightly more earthy than scotch bonnet', uses:['Jamaican cooking','Jerk','Hot sauces'], days:'80–100', height:'24–36"', colors:'Green → Red or Yellow', soil:'Tropical, well-drained' },
+
+  // ── SUPER HOT (500,000–1,500,000 SHU) ─────────────────────────────────────
+  { id:'naga-morich', name:'Naga Morich', aka:['Dorset Naga','Serpent Chili'], species:'Capsicum chinense', type:'super', origin:'Northeast India & Bangladesh', shu:{min:600000,max:1000000}, desc:'A close relative of the ghost pepper from Nagaland, India. The "Dorset Naga" is a UK-selected strain developed by Joy and Michael Michaud from seeds sent by a Bangladeshi family. Held the world record briefly in 2006.', flavor:'Sweet fruity top note immediately overwhelmed by extreme heat', uses:['Extreme hot sauces','Chili competitions','UK superhot cooking'], days:'100–120', height:'24–48"', colors:'Green → Red', soil:'Rich, well-drained, warm climate' },
+  { id:'ghost-pepper', name:'Ghost Pepper', aka:['Bhut Jolokia','Naga Jolokia','Bih Jolokia','Raja Mirch'], species:'Capsicum chinense × frutescens', type:'super', origin:'Northeast India (Assam, Nagaland, Manipur)', shu:{min:855000,max:1041427}, desc:'Guinness World Record holder 2007–2011. A natural interspecific hybrid used in Indian cooking and warfare — the Indian Army deployed ghost pepper grenades. Delayed heat onset: 30–45 seconds before the burn begins.', flavor:'Fruity sweetness followed by delayed catastrophic heat', uses:['Indian extreme cuisine','Ghost pepper sauces','Chili grenades'], days:'100–120', height:'24–48"', colors:'Green → Red/Orange/Yellow/Chocolate', soil:'Rich, well-drained, pH 6.0–6.5' },
+  { id:'ghost-chocolate', name:'Chocolate Ghost Pepper', aka:['Bhut Jolokia Chocolate','Brown Ghost'], species:'Capsicum chinense × frutescens', type:'super', origin:'Northeast India', shu:{min:800000,max:1001300}, desc:'A chocolate-colored variant of the ghost pepper with a slightly different flavor profile — more earthy and less fruity than the red. Still carries the signature delayed heat onset.', flavor:'Earthy-sweet, delayed extreme heat, chocolate undertones', uses:['Extreme hot sauces','Ghost pepper cuisine'], days:'100–120', height:'24–48"', colors:'Green → Chocolate brown', soil:'Rich, well-drained, warm' },
+  { id:'naga-viper', name:'Naga Viper', aka:[], species:'Capsicum chinense (triple hybrid)', type:'super', origin:'Cark, Cumbria, England', shu:{min:900000,max:1382118}, desc:'Created by chili farmer Gerald Fowler in Cumbria, England. A three-way hybrid of ghost pepper, naga morich, and Trinidad scorpion. Held the world record briefly in 2011. Unstable genetics mean seeds may not breed true.', flavor:'Fruity, complex, extreme heat', uses:['Record attempts','Extreme hot sauces'], days:'100–120', height:'24–48"', colors:'Green → Red', soil:'Well-drained, UK greenhouse conditions' },
+  { id:'7-pot', name:'7 Pot', aka:['7 Pod','Seven Pot Pepper'], species:'Capsicum chinense', type:'super', origin:'Trinidad & Tobago', shu:{min:1000000,max:1200000}, desc:'Named because one pepper was traditionally said to be hot enough to spice 7 pots of stew. Many varieties exist (Jonah, Barrackpore, Douglah, etc.). Deeply wrinkled, bumpy appearance typical of all variants.', flavor:'Fruity, floral, explosive heat', uses:['Trinidadian cooking','Extreme sauces'], days:'90–120', height:'36–48"', colors:'Green → Red', soil:'Tropical, well-drained, rich' },
+  { id:'7-pot-jonah', name:'7 Pot Jonah', aka:['Jonah 7 Pod'], species:'Capsicum chinense', type:'super', origin:'Trinidad & Tobago', shu:{min:1000000,max:1200000}, desc:'A particularly prized 7 pot variety known for its fruity flavor alongside extreme heat. Large for a 7-pot type. Considered by many growers to be one of the best-tasting superhot peppers.', flavor:'Fruity, tropical, extreme heat', uses:['Extreme cooking','Hot sauces'], days:'90–120', height:'36–48"', colors:'Green → Red', soil:'Tropical conditions, fertile' },
+  { id:'7-pot-barrackpore', name:'7 Pot Barrackpore', aka:['Barrakpore','7 Pod Barrackpore'], species:'Capsicum chinense', type:'super', origin:'Barrackpore, Trinidad', shu:{min:1000000,max:1300000}, desc:'From the Barrackpore region of Trinidad. One of the original named 7 pot varieties. Extremely wrinkled and bumpy pods. Known for sustained, building heat rather than an instant punch.', flavor:'Fruity, building sustained heat', uses:['Extreme sauces','Chili growing hobbyists'], days:'95–120', height:'36–48"', colors:'Green → Red', soil:'Tropical, rich, well-drained' },
+  { id:'7-pot-douglah', name:'7 Pot Douglah', aka:['Chocolate 7 Pot','Brown 7 Pod'], species:'Capsicum chinense', type:'super', origin:'Trinidad & Tobago', shu:{min:923889,max:1853936}, desc:'"Douglah" is a Trinidadian term for a person of mixed Indian and African descent — this pepper reflects Trinidad\'s multicultural heritage. One of the hottest non-reaper peppers. Deep chocolate brown with intense fruity notes.', flavor:'Rich chocolate-fruity, one of the most complex superhot flavors', uses:['Extreme hot sauces','Superhot cuisine'], days:'100–120', height:'36–48"', colors:'Green → Chocolate brown', soil:'Tropical, rich, well-drained' },
+  { id:'brain-strain', name:'Brain Strain', aka:['7 Pot Brain Strain','Brain Strain Y (yellow)'], species:'Capsicum chinense', type:'super', origin:'Troy, South Carolina, USA', shu:{min:1000000,max:1350000}, desc:'Created by David Capiello through selective breeding of 7 pot peppers. Named for the deeply convoluted, brain-like surface texture. Extremely consistent superhot with very high capsaicin content.', flavor:'Fruity, extreme heat, slightly sweet', uses:['Extreme hot sauces','Superhot competitions'], days:'100–120', height:'36–48"', colors:'Green → Red', soil:'Well-drained, full sun, warm' },
+  { id:'infinity', name:'Infinity Chili', aka:[], species:'Capsicum chinense', type:'super', origin:'Grantham, Lincolnshire, England', shu:{min:1000000,max:1176182}, desc:'Created by Nick Woods of Fire Foods Ltd. Held the Guinness World Record for just two weeks in February 2011. A naga-type pepper bred through selective crossing. Rapidly overtaken in the ongoing superhot arms race.', flavor:'Fruity with extreme heat', uses:['Record attempts','Extreme hot sauces'], days:'100–120', height:'24–48"', colors:'Green → Red', soil:'Greenhouse conditions, UK' },
+  { id:'komodo-dragon', name:'Komodo Dragon', aka:[], species:'Capsicum chinense', type:'super', origin:'UK (Tesco exclusive variety)', shu:{min:1400000,max:1400000}, desc:'Developed by chili specialist Salvatore Genovese and launched exclusively through UK supermarket Tesco in 2015. Generates a delayed 30-second heat onset. Mild initial flavor then brutal heat — similar mechanism to ghost pepper.', flavor:'Initially mild and sweet, then savage delayed heat', uses:['UK specialty cooking','Extreme hot sauces','Novelty eating'], days:'90–120', height:'24–36"', colors:'Green → Red', soil:'UK greenhouse conditions' },
+  { id:'trinidad-scorpion', name:'Trinidad Scorpion', aka:['Trinidad Scorpion Original'], species:'Capsicum chinense', type:'super', origin:'Moruga district, Trinidad', shu:{min:300000,max:1200000}, desc:'The original Trinidad Scorpion — broader category encompassing Butch T, Moruga, and other strains. Named for the stinger-like tail. Introduced the world to scorpion-type superhot peppers from Trinidad.', flavor:'Sweet fruity base, then extreme sustained heat', uses:['Extreme hot sauces','Superhot cuisine','Record crops'], days:'100–120', height:'36–48"', colors:'Green → Red', soil:'Tropical, rich, well-drained' },
+  { id:'butch-t', name:'Trinidad Scorpion Butch T', aka:['Butch T Scorpion'], species:'Capsicum chinense', type:'super', origin:'Australia (developed from Trinidad stock)', shu:{min:1300000,max:1463700}, desc:'Developed by Butch Taylor in Mississippi from Trinidad stock, later grown by the Wahguyuwi family in Australia who achieved record measurements. Held the Guinness record 2011–2013.', flavor:'Fruity, extreme scorpion-type heat', uses:['Record growing','Extreme hot sauces'], days:'100–120', height:'36–48"', colors:'Green → Red', soil:'Full sun, well-drained, warm climate' },
+
+  // ── EXTREME (1,500,000+ SHU) ───────────────────────────────────────────────
+  { id:'trinidad-moruga-scorpion', name:'Trinidad Moruga Scorpion', aka:['Moruga Scorpion','TMS'], species:'Capsicum chinense', type:'extreme', origin:'Moruga District, Trinidad & Tobago', shu:{min:1500000,max:2009231}, desc:'Held Guinness World Record February 2012 to August 2013. From the Moruga district of Trinidad. Named for its scorpion-tail appendage. Heat builds slowly but reaches catastrophic levels. Average pod measured 1.2M SHU with peaks over 2M.', flavor:'Sweet fruity (chocolate/berry) notes then extreme searing heat', uses:['Extreme hot sauces','Competition chili','Record growing'], days:'100–120', height:'36–48"', colors:'Green → Red', soil:'Rich, fertile, well-drained, warm' },
+  { id:'7-pot-primo', name:'7 Pot Primo', aka:['Primo Pepper'], species:'Capsicum chinense', type:'extreme', origin:'Louisiana, USA (created by Troy Primeaux)', shu:{min:1200000,max:1469000}, desc:'Created by Troy "Primo" Primeaux, a horticulturist and musician from Louisiana. A cross between a naga morich and a 7 pot. The distinctive scorpion-like tail makes it visually recognizable. One of the most consistent superhots.', flavor:'Fruity, extreme heat, lingering', uses:['Extreme hot sauces','Superhot growing hobby'], days:'100–120', height:'36–48"', colors:'Green → Red', soil:'Rich, well-drained, Louisiana-type humid' },
+  { id:'carolina-reaper', name:'Carolina Reaper', aka:['HP22B'], species:'Capsicum chinense', type:'extreme', origin:'Fort Mill, South Carolina, USA', shu:{min:1400000,max:2200000}, desc:'Current Guinness World Record holder (certified 2023, average 1.64M SHU). Created by Ed "Smokin\' Ed" Curlin at PuckerButt Pepper Company. Cross between a Pakistani Naga and a Red Habanero. Distinctive wrinkled red skin and scorpion tail.', flavor:'Sweet fruity burst immediately followed by catastrophic heat', uses:['Extreme hot sauces','Eating contests','Chili powders','Novelty foods'], days:'90–120', height:'36–48"', colors:'Green → Deep red', soil:'Well-drained, fertile, pH 6.0–6.8, full sun' },
+  { id:'dragon-breath', name:"Dragon's Breath", aka:[], species:'Capsicum chinense', type:'extreme', origin:'St Asaph, Wales, UK', shu:{min:2480000,max:2480000}, desc:'Created by Welsh farmer Mike Smith in collaboration with Nottingham Trent University. Developed initially to test a new plant feed, not as a food product. Named after the Welsh dragon. Not certified by Guinness; independently tested.', flavor:'Extreme heat — developers advise not eating whole pods', uses:['Research (plant nutrients)','Potential medical anesthetic use'], days:'100–120', height:'24–36"', colors:'Green → Red', soil:'UK greenhouse conditions' },
+  { id:'pepper-x', name:'Pepper X', aka:['X Pepper'], species:'Capsicum chinense', type:'extreme', origin:'South Carolina, USA (PuckerButt Pepper Co.)', shu:{min:2690000,max:3180000}, desc:'Created by Ed Curlin, certified by Guinness as world\'s hottest in October 2023 at an average of 2.69M SHU. A cross between Carolina Reaper and a Michigan pepper. Develops on a flat, spreading plant. Peak measurements exceed 3M SHU.', flavor:'Instant extreme heat with no grace period', uses:['Extreme hot sauces (1 Drop Dead Sauce)','Record holding'], days:'100–120', height:'24–36"', colors:'Green → Yellow-orange', soil:'Well-drained, fertile, controlled conditions' },
+  { id:'apollo-pepper', name:'Apollo Pepper', aka:[], species:'Capsicum chinense', type:'extreme', origin:'South Carolina, USA (PuckerButt Pepper Co.)', shu:{min:2900000,max:3000000}, desc:'The latest creation from Ed Curlin, reportedly measuring over 3 million SHU. Not yet officially certified by Guinness as of 2025. If certified, would surpass Pepper X. Named after the Apollo space program. Still being stabilized.', flavor:'Reportedly extreme even beyond Pepper X', uses:['Record growing','Extreme research'], days:'100–120', height:'24–48"', colors:'Green → Red', soil:'Controlled greenhouse conditions, South Carolina' }
+];
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+const TYPE_META = {
+  sweet:   { label:'Sweet',     icon:'🟢', cls:'c-sweet',   bar:'bar-sweet' },
+  mild:    { label:'Mild',      icon:'🟡', cls:'c-mild',    bar:'bar-mild' },
+  medium:  { label:'Medium',    icon:'🟠', cls:'c-medium',  bar:'bar-medium' },
+  hot:     { label:'Hot',       icon:'🔴', cls:'c-hot',     bar:'bar-hot' },
+  super:   { label:'Super Hot', icon:'🔥', cls:'c-super',   bar:'bar-super' },
+  extreme: { label:'Extreme',   icon:'💀', cls:'c-extreme', bar:'bar-extreme' },
+};
+
+function fmtSHU(shu) {
+  if (shu.min === 0 && shu.max === 0) return '0 SHU';
+  const f = n => n >= 1000000 ? (n/1000000).toFixed(2).replace(/\.?0+$/,'')+'M' : n >= 1000 ? Math.round(n/1000)+'K' : n;
+  return shu.min === shu.max ? f(shu.min)+' SHU' : f(shu.min)+'–'+f(shu.max)+' SHU';
+}
+function shuPct(shu) { return Math.min(100, (shu.max / 3200000) * 100); }
+
+// ── STATE ────────────────────────────────────────────────────────────────────
+let activeFilter = 'all', searchQuery = '';
+
+// ── GRID ─────────────────────────────────────────────────────────────────────
+function renderGrid() {
+  const q = searchQuery.toLowerCase();
+  const list = PEPPERS.filter(p => {
+    if (activeFilter !== 'all' && p.type !== activeFilter) return false;
+    if (!q) return true;
+    return [p.name, p.origin, p.desc, p.flavor, ...(p.aka||[])].some(s => s.toLowerCase().includes(q));
+  });
+
+  document.getElementById('resultsCount').textContent = list.length === PEPPERS.length
+    ? '' : `Showing ${list.length} of ${PEPPERS.length} peppers`;
+
+  if (!list.length) {
+    document.getElementById('pepperGrid').innerHTML = `<div class="no-results">No peppers found — try a different search or clear filters.</div>`;
+    return;
+  }
+  const m = TYPE_META;
+  document.getElementById('pepperGrid').innerHTML = list.map(p => {
+    const tm = m[p.type];
+    return `<div class="card" onclick="openModal('${p.id}')">
+      <div class="card-heat-bar ${tm.bar}"></div>
+      <div class="card-body">
+        <div class="card-name">${p.name}</div>
+        ${p.aka?.[0] ? `<div class="card-aka">${p.aka[0]}</div>` : ''}
+        <div class="card-origin">📍 ${p.origin}</div>
+        <div class="card-footer">
+          <span class="card-type">${tm.icon} ${tm.label}</span>
+          <span class="shu-badge ${tm.cls}">${fmtSHU(p.shu)}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────────────────
+function openModal(id) {
+  const p = PEPPERS.find(x => x.id === id);
+  if (!p) return;
+  const tm = TYPE_META[p.type];
+  document.getElementById('modalHeatBar').className = `modal-heat-bar ${tm.bar}`;
+
+  document.getElementById('modalBody').innerHTML = `
+    <div class="modal-header" style="padding-top:0.2rem">
+      <div class="modal-name">${p.name}</div>
+      <div class="modal-species">${p.species}</div>
+      ${p.aka?.length ? `<div class="modal-aka">Also known as: ${p.aka.join(' · ')}</div>` : ''}
+    </div>
+
+    <div class="modal-stats">
+      <div class="stat-box"><div class="stat-label">Origin</div><div class="stat-value">${p.origin}</div></div>
+      <div class="stat-box"><div class="stat-label">Heat Level</div><div class="stat-value ${tm.cls}">${tm.icon} ${tm.label}</div></div>
+      <div class="stat-box"><div class="stat-label">Colors (Unripe → Ripe)</div><div class="stat-value">${p.colors}</div></div>
+      <div class="stat-box"><div class="stat-label">Days to Harvest</div><div class="stat-value">${p.days} days</div></div>
+      <div class="stat-box"><div class="stat-label">Plant Height</div><div class="stat-value">${p.height}</div></div>
+      <div class="stat-box"><div class="stat-label">Sunlight</div><div class="stat-value">Full sun (6–8 hrs)</div></div>
+    </div>
+
+    <div class="shu-meter">
+      <div class="shu-meter-label">
+        <span>Scoville Heat Units (SHU)</span>
+        <span class="${tm.cls}" style="font-weight:800">${fmtSHU(p.shu)}</span>
+      </div>
+      <div class="shu-bar-bg"><div class="shu-bar-fill ${tm.bar}" style="width:${shuPct(p.shu)}%"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:var(--text-dim);margin-top:0.2rem"><span>0 (Bell Pepper)</span><span>3.2M (Pepper X / Apollo)</span></div>
+    </div>
+
+    <div class="section-title">About</div>
+    <p class="description-text">${p.desc}</p>
+
+    <div class="section-title">Flavor Profile</div>
+    <p class="description-text">${p.flavor}</p>
+
+    <div class="section-title">Common Uses</div>
+    <div class="tags">${p.uses.map(u=>`<span class="tag">${u}</span>`).join('')}</div>
+
+    <div class="section-title">Growing Conditions</div>
+    <div class="tags">
+      <span class="tag">🌱 ${p.soil}</span>
+      <span class="tag">💧 Consistent watering, avoid waterlogging</span>
+    </div>
+
+    <div class="planting-section">
+      <div class="planting-title">🌱 Planting Calendar</div>
+      <div class="planting-location">
+        <input type="text" id="locInput" placeholder="Enter your city or country…" onkeydown="if(event.key==='Enter')doPlanting()">
+        <button onclick="doPlanting()">Get Dates</button>
+      </div>
+      <div class="planting-hint">e.g. "London", "Florida", "Australia", "Brazil", "Japan"</div>
+      <div class="planting-result" id="plantResult"></div>
+    </div>`;
+
+  document.getElementById('modalOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function doPlanting() {
+  const loc = document.getElementById('locInput')?.value?.trim();
+  if (!loc) return;
+  const zone = getZone(loc);
+  const cal = CALS[zone];
+  document.getElementById('plantResult').innerHTML = `
+    <div class="planting-zone">Climate zone: <strong>${cal.zone}</strong></div>
+    <div class="calendar-grid">
+      <div class="cal-item"><div class="cal-item-label">🌡 Start Seeds</div><div class="cal-item-value">${cal.start}</div></div>
+      <div class="cal-item"><div class="cal-item-label">🏠 Indoors Until</div><div class="cal-item-value">${cal.indoors}</div></div>
+      <div class="cal-item"><div class="cal-item-label">🌿 Transplant</div><div class="cal-item-value">${cal.transplant}</div></div>
+      <div class="cal-item cal-span"><div class="cal-item-label">🌶 Harvest Window</div><div class="cal-item-value">${cal.harvest}</div></div>
+    </div>
+    <div class="cal-notes">${cal.notes}</div>`;
+  document.getElementById('plantResult').classList.add('show');
+}
+
+function getZone(loc) {
+  const l = loc.toLowerCase();
+  const has = (...t) => t.some(w => l.includes(w));
+  if (has('tropical','amazon','indonesia','philippines','malaysia','singapore','thailand','vietnam','cambodia','myanmar','bangladesh','sri lanka','ghana','nigeria','kenya','ethiopia','tanzania','uganda','cameroon','ivory','senegal','costa rica','panama','guatemala','honduras','el salvador','nicaragua','belize','trinidad','tobago','jamaica','barbados','haiti','puerto rico','guyana','suriname','hawaii','maldives','mauritius','borneo','java','bali','papua','congo','manaus','nairobi','accra','lagos','colombo','caracas','medellin')) return 'tropical';
+  if (has('california','los angeles','san diego','san francisco','sacramento','napa','spain','portugal','italy','greece','turkey','morocco','algeria','tunisia','israel','cyprus','croatia','malta','sicily','sardinia','barcelona','madrid','rome','athens','istanbul','casablanca','beirut','marseille','valencia','malaga','nice')) return 'mediterranean';
+  if (has('australia','sydney','brisbane','perth','adelaide','melbourne','new zealand','auckland','christchurch','argentina','buenos aires','santiago','cape town','johannesburg','durban','pretoria','florida','texas','louisiana','georgia','south carolina','alabama','mississippi','tennessee','virginia','arizona','new mexico','oklahoma','mexico','china','shanghai','guangzhou','hong kong','taiwan','osaka','tokyo','seoul','busan')) return 'subtropical';
+  if (has('canada','alaska','norway','sweden','finland','denmark','iceland','greenland','russia','siberia','scotland','ireland','faroe','lapland','yukon','alberta','manitoba','british columbia','ontario','quebec','oslo','stockholm','helsinki','reykjavik','murmansk','minnesota','wisconsin','michigan','maine','vermont','north dakota','montana','winnipeg','edmonton','calgary','vancouver','ottawa','toronto','montreal')) return 'cold';
+  return 'temperate';
+}
+
+const CALS = {
+  tropical:      { zone:'Tropical', start:'Year-round', indoors:'Optional', transplant:'Year-round', harvest:'Year-round (60–120 days after transplant)', notes:'Peppers are perennial in true tropical climates and can produce for multiple years. Best fruit quality often comes in the dry season. Watch for fungal disease during monsoon periods.' },
+  mediterranean: { zone:'Mediterranean / West Coast', start:'Jan – Feb', indoors:'Jan – Mar (8 wks before transplant)', transplant:'Mar – May', harvest:'Jul – Oct', notes:'Ideal pepper climate. Long dry summers produce excellent fruit and intense heat. Drip irrigation recommended. Plants may survive mild winters in sheltered microclimates.' },
+  subtropical:   { zone:'Subtropical', start:'Dec – Feb', indoors:'Dec – Feb (8–10 wks before last frost)', transplant:'Mar – Apr', harvest:'Jun – Nov', notes:'Long growing seasons allow multiple harvests. In frost-free zones peppers can overwinter and become perennial. Shade cloth helps above 100°F/38°C during peak summer.' },
+  temperate:     { zone:'Temperate', start:'Feb – Apr', indoors:'Feb – Mar (8–10 wks before last frost)', transplant:'May – Jun (after last frost)', harvest:'Aug – Oct', notes:'Start seeds on a heat mat (70–85°F/21–29°C soil temp). Harden seedlings 1–2 weeks before transplanting. Row covers extend the season in cooler areas.' },
+  cold:          { zone:'Cold / Northern', start:'Mar – Apr', indoors:'Mar – Apr (10–12 wks before last frost)', transplant:'Mid-Jun (nights consistently above 50°F/10°C)', harvest:'Aug – Sep', notes:'Choose fast-maturing varieties (under 70 days). Cold frames and black plastic mulch warm the soil significantly. A greenhouse or polytunnel lets you grow peppers that otherwise wouldn\'t ripen.' },
+};
+
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); document.body.style.overflow = ''; }
+function closeModalOnOverlay(e) { if (e.target.id === 'modalOverlay') closeModal(); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+document.getElementById('searchInput').addEventListener('input', function() {
+  searchQuery = this.value;
+  document.getElementById('searchClear').classList.toggle('visible', !!this.value);
+  renderGrid();
+});
+function clearSearch() {
+  document.getElementById('searchInput').value = '';
+  searchQuery = '';
+  document.getElementById('searchClear').classList.remove('visible');
+  renderGrid();
+}
+function setFilter(f, btn) {
+  activeFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderGrid();
+}
+
+document.getElementById('totalCount').textContent = PEPPERS.length + ' peppers in the database';
+renderGrid();
+</script>
+</body>
+</html>
