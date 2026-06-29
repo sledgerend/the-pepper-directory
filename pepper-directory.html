@@ -26,6 +26,8 @@
   .logo { font-size: 2.8rem; font-weight: 900; letter-spacing: -1px; background: linear-gradient(135deg, #e8420a, #f97316, #fbbf24); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; position: relative; }
   .tagline { color: var(--text-muted); font-size: 0.95rem; margin-top: 0.3rem; position: relative; }
   .pepper-count { color: var(--text-dim); font-size: 0.82rem; margin-top: 0.2rem; position: relative; }
+  .planner-cta { position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); background: var(--accent); border: none; border-radius: 8px; color: white; font-size: 0.8rem; font-weight: 700; padding: 0.5rem 0.9rem; cursor: pointer; text-decoration: none; display: flex; align-items: center; gap: 0.35rem; transition: background 0.15s; z-index: 2; white-space: nowrap; }
+  .planner-cta:hover { background: var(--accent2); }
 
   .search-section { max-width: 700px; margin: 2rem auto; padding: 0 1rem; }
   .search-wrap { position: relative; }
@@ -132,6 +134,7 @@
   <div class="logo">🌶️ The Pepper Directory</div>
   <div class="tagline">Identify, explore, and grow peppers from around the world</div>
   <div class="pepper-count" id="totalCount"></div>
+  <a href="pepper-planner.html" class="planner-cta">🌶️ Pepper Planner</a>
 </header>
 
 <div class="search-section">

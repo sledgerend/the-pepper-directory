@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Pepper Planner — AI Growing Advice by @Pepperplanter</title>
+<meta name="description" content="Get a personalized pepper growing plan — watering schedule, fertilizer timing, stage-specific tips, and more. Powered by AI, built by @Pepperplanter.">
+<style>
+  :root {
+    --bg: #0f0a08;
+    --surface: #1a1008;
+    --surface2: #241510;
+    --border: #3a2010;
+    --accent: #e8420a;
+    --accent2: #f97316;
+    --accent3: #fbbf24;
+    --text: #f5e6d3;
+    --text-muted: #a08060;
+    --text-dim: #6b4a30;
+    --radius: 12px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+
+  /* ── HEADER ── */
+  header { background: linear-gradient(135deg, #1a0803 0%, #2d0f05 50%, #1a0803 100%); border-bottom: 1px solid var(--border); padding: 1.6rem 1rem 1.3rem; text-align: center; position: relative; overflow: hidden; }
+  header::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 0%, rgba(232,66,10,0.15) 0%, transparent 70%); }
+  .logo { font-size: 2.2rem; font-weight: 900; letter-spacing: -1px; background: linear-gradient(135deg, #e8420a, #f97316, #fbbf24); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; position: relative; }
+  .tagline { color: var(--text-muted); font-size: 0.88rem; margin-top: 0.25rem; position: relative; }
+  .back-link { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); text-decoration: none; font-size: 0.8rem; display: flex; align-items: center; gap: 0.3rem; transition: color 0.2s; z-index: 2; white-space: nowrap; }
+  .back-link:hover { color: var(--accent2); }
+
+  /* ── LAYOUT ── */
+  .planner-wrap { max-width: 660px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+
+  /* ── PROGRESS ── */
+  .progress-section { margin-bottom: 1.6rem; }
+  .progress-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.55rem; }
+  .step-label { font-size: 0.75rem; color: var(--text-dim); font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; }
+  .step-fraction { font-size: 0.75rem; color: var(--text-dim); }
+  .progress-track { height: 3px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 2px; transition: width 0.4s ease; }
+
+  /* ── STEPS ── */
+  .step { display: none; }
+  .step.active { display: block; animation: fadeIn 0.22s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  .step-title { font-size: 1.3rem; font-weight: 800; margin-bottom: 0.35rem; line-height: 1.3; }
+  .step-sub { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.4rem; line-height: 1.55; }
+
+  .section-head { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin: 1.2rem 0 0.55rem; }
+  .section-head:first-of-type { margin-top: 0; }
+
+  /* ── OPTION CARDS ── */
+  .option-grid { display: grid; gap: 0.5rem; }
+  .option-grid.cols2 { grid-template-columns: 1fr 1fr; }
+  .option-grid.cols3 { grid-template-columns: 1fr 1fr 1fr; }
+
+  .opt { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 0.8rem 0.9rem; cursor: pointer; transition: border-color 0.15s, background 0.15s; display: flex; align-items: flex-start; gap: 0.65rem; user-select: none; }
+  .opt:hover { border-color: var(--accent2); }
+  .opt.selected { border-color: var(--accent); background: rgba(232,66,10,0.07); }
+
+  .opt-icon { font-size: 1.1rem; flex-shrink: 0; line-height: 1.4; }
+  .opt-text { flex: 1; min-width: 0; }
+  .opt-label { font-weight: 600; font-size: 0.88rem; line-height: 1.3; }
+  .opt-desc { color: var(--text-muted); font-size: 0.73rem; margin-top: 0.15rem; line-height: 1.4; }
+  .opt-check { width: 17px; height: 17px; border-radius: 50%; border: 1.5px solid var(--border); flex-shrink: 0; margin-top: 0.12rem; transition: all 0.15s; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: white; opacity: 0; }
+  .opt.selected .opt-check { opacity: 1; background: var(--accent); border-color: var(--accent); }
+  .opt-check.square { border-radius: 4px; }
+
+  .opt.compact { padding: 0.6rem 0.85rem; align-items: center; }
+  .opt.compact .opt-icon { font-size: 1rem; }
+  .opt.compact .opt-label { font-size: 0.84rem; }
+  .opt.compact .opt-desc { font-size: 0.71rem; }
+
+  /* ── TEXT INPUT ── */
+  .text-input { width: 100%; padding: 0.8rem 1rem; background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); color: var(--text); font-size: 0.92rem; outline: none; transition: border-color 0.2s, box-shadow 0.2s; font-family: inherit; }
+  .text-input:focus { border-color: var(--accent2); box-shadow: 0 0 0 3px rgba(249,115,22,0.1); }
+  .text-input::placeholder { color: var(--text-dim); }
+
+  /* ── CONDITIONAL SECTION ── */
+  .conditional { display: none; }
+  .conditional.show { display: block; }
+
+  /* ── NAV BUTTONS ── */
+  .nav-wrap { display: flex; gap: 0.65rem; margin-top: 1.8rem; }
+  .nav-wrap.hidden { display: none; }
+  .btn-back { flex: 0 0 auto; padding: 0.8rem 1.2rem; background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); color: var(--text-muted); font-size: 0.88rem; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+  .btn-back:hover { border-color: var(--accent2); color: var(--text); }
+  .btn-back.invisible { visibility: hidden; pointer-events: none; }
+  .btn-next { flex: 1; padding: 0.8rem; background: var(--accent); border: none; border-radius: var(--radius); color: white; font-size: 0.92rem; font-weight: 700; cursor: pointer; font-family: inherit; transition: background 0.15s; }
+  .btn-next:hover { background: var(--accent2); }
+
+  /* ── EMAIL GATE ── */
+  .email-gate { display: none; }
+  .email-gate.active { display: block; animation: fadeIn 0.22s ease; }
+  .email-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 16px; padding: 2rem 1.5rem; text-align: center; }
+  .eg-icon { font-size: 2.8rem; margin-bottom: 0.9rem; }
+  .eg-title { font-size: 1.35rem; font-weight: 800; margin-bottom: 0.45rem; }
+  .eg-sub { color: var(--text-muted); font-size: 0.86rem; margin-bottom: 1.4rem; line-height: 1.55; max-width: 400px; margin-left: auto; margin-right: auto; }
+  .email-row { display: flex; gap: 0.55rem; }
+  .email-row input { flex: 1; padding: 0.8rem 0.95rem; background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius); color: var(--text); font-size: 0.9rem; outline: none; font-family: inherit; transition: border-color 0.2s; }
+  .email-row input:focus { border-color: var(--accent2); }
+  .email-row input::placeholder { color: var(--text-dim); }
+  .btn-generate { padding: 0.8rem 1.1rem; background: var(--accent); border: none; border-radius: var(--radius); color: white; font-size: 0.88rem; font-weight: 700; cursor: pointer; font-family: inherit; white-space: nowrap; transition: background 0.15s; }
+  .btn-generate:hover { background: var(--accent2); }
+  .email-privacy { color: var(--text-dim); font-size: 0.7rem; margin-top: 0.65rem; }
+
+  /* ── LOADING ── */
+  .loading-screen { display: none; text-align: center; padding: 4rem 1rem; }
+  .loading-screen.active { display: block; animation: fadeIn 0.22s ease; }
+  .loading-pepper { font-size: 3rem; animation: pulse 1.2s ease-in-out infinite; display: inline-block; }
+  @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.15); opacity: 0.7; } }
+  .loading-title { font-size: 1.05rem; font-weight: 700; margin: 1.1rem 0 0.35rem; }
+  .loading-sub { color: var(--text-muted); font-size: 0.85rem; }
+  .loading-sub::after { content: ''; animation: dots 1.8s steps(4, end) infinite; }
+  @keyframes dots { 0%, 20% { content: ''; } 40% { content: '.'; } 60% { content: '..'; } 80%, 100% { content: '...'; } }
+
+  /* ── RESULTS ── */
+  .results-screen { display: none; }
+  .results-screen.active { display: block; animation: fadeIn 0.3s ease; }
+  .results-badge { display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(232,66,10,0.1); border: 1px solid rgba(232,66,10,0.28); border-radius: 20px; padding: 0.3rem 0.85rem; font-size: 0.72rem; font-weight: 600; color: var(--accent2); margin-bottom: 0.9rem; }
+  .results-title { font-size: 1.3rem; font-weight: 800; margin-bottom: 0.2rem; }
+  .results-sub { color: var(--text-muted); font-size: 0.83rem; margin-bottom: 1.4rem; }
+
+  .result-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 1.15rem; margin-bottom: 0.65rem; }
+  .result-card.pro-tip { border-color: rgba(232,66,10,0.35); background: rgba(232,66,10,0.05); }
+  .result-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.65rem; }
+  .result-card.pro-tip .result-title { color: var(--accent2); }
+  .result-body { color: var(--text-muted); font-size: 0.855rem; line-height: 1.65; }
+  .result-body strong { color: var(--text); font-weight: 600; }
+  .result-body em { color: var(--text-muted); }
+  .result-body p { margin-bottom: 0.45rem; }
+  .result-body p:last-child { margin-bottom: 0; }
+  .result-body ul { margin: 0.4rem 0 0.4rem 1.1rem; }
+  .result-body li { margin-bottom: 0.25rem; }
+
+  .results-footer { margin-top: 1.8rem; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; }
+  .btn-insta { display: inline-flex; align-items: center; gap: 0.5rem; background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 0.75rem 1.2rem; color: var(--text); text-decoration: none; font-size: 0.85rem; font-weight: 600; transition: border-color 0.15s, color 0.15s; }
+  .btn-insta:hover { border-color: var(--accent2); color: var(--accent2); }
+  .btn-restart { background: none; border: 1.5px solid var(--border); border-radius: var(--radius); color: var(--text-muted); padding: 0.6rem 1.1rem; font-size: 0.82rem; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+  .btn-restart:hover { border-color: var(--accent2); color: var(--text); }
+
+  .error-card { background: rgba(239,68,68,0.07); border: 1.5px solid rgba(239,68,68,0.25); border-radius: var(--radius); padding: 1.1rem; color: #fca5a5; font-size: 0.85rem; line-height: 1.6; }
+
+  @media (max-width: 500px) {
+    .option-grid.cols2 { grid-template-columns: 1fr; }
+    .option-grid.cols3 { grid-template-columns: 1fr 1fr; }
+    .email-row { flex-direction: column; }
+    .back-link span { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="pepper-directory.html" class="back-link">← <span>Pepper Directory</span></a>
+  <div class="logo">🌶️ The Pepper Planner</div>
+  <div class="tagline">AI-powered growing advice — personalized for your plants, by @Pepperplanter</div>
+</header>
+
+<div class="planner-wrap">
+
+  <!-- PROGRESS -->
+  <div class="progress-section" id="progressSection">
+    <div class="progress-meta">
+      <span class="step-label" id="stepLabel">Pepper Type</span>
+      <span class="step-fraction" id="stepFraction">Step 1 of 7</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:14%"></div></div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════
+       STEP 1 — PEPPER TYPE
+  ════════════════════════════════════════════════════════ -->
+  <div class="step active" id="step1">
+    <div class="step-title">What are you growing?</div>
+    <div class="step-sub">Pick the heat category that best fits your pepper. If you know the variety, add it below.</div>
+
+    <div class="option-grid">
+      <div class="opt" data-group="pepperType" data-val="sweet" onclick="selectOpt(this)">
+        <div class="opt-icon">🟢</div>
+        <div class="opt-text">
+          <div class="opt-label">Sweet</div>
+          <div class="opt-desc">Bell, banana, shishito, pimento, Italian frying, aji dulce...</div>
+        </div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt" data-group="pepperType" data-val="mild" onclick="selectOpt(this)">
+        <div class="opt-icon">🟡</div>
+        <div class="opt-text">
+          <div class="opt-label">Mild Heat</div>
+          <div class="opt-desc">Poblano, anaheim, Hatch, cubanelle, paprika, Padrón...</div>
+        </div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt" data-group="pepperType" data-val="medium" onclick="selectOpt(this)">
+        <div class="opt-icon">🟠</div>
+        <div class="opt-text">
+          <div class="opt-label">Medium Heat</div>
+          <div class="opt-desc">Jalapeño, serrano, cayenne, Thai bird, Fresno, chipotle...</div>
+        </div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt" data-group="pepperType" data-val="hot" onclick="selectOpt(this)">
+        <div class="opt-icon">🔴</div>
+        <div class="opt-text">
+          <div class="opt-label">Hot</div>
+          <div class="opt-desc">Habanero, scotch bonnet, datil, piri piri, red savina...</div>
+        </div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt" data-group="pepperType" data-val="superhot" onclick="selectOpt(this)">
+        <div class="opt-icon">💀</div>
+        <div class="opt-text">
+          <div class="opt-label">Superhot</div>
+          <div class="opt-desc">Ghost pepper, scorpion, 7 pot, Carolina Reaper, Pepper X, Apollo...</div>
+        </div>
+        <div class="opt-check">✓</div>
+      </div>
+    </div>
+
+    <div class="section-head">Specific variety name <span style="color:var(--text-dim);font-weight:400;text-transform:none;letter-spacing:0">(optional but makes advice more precise)</span></div>
+    <input class="text-input" type="text" id="specificVariety" placeholder="e.g. Carolina Reaper, Lemon Drop, Jalapeño M, Aji Amarillo..." autocomplete="off">
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════
+       STEP 2 — GROWING SETUP
+  ════════════════════════════════════════════════════════ -->
+  <div class="step" id="step2">
+    <div class="step-title">Your growing setup</div>
+    <div class="step-sub">Where your plant lives and how big its home is changes everything about watering and feeding.</div>
+
+    <div class="section-head">Growing environment</div>
+    <div class="option-grid">
+      <div class="opt" data-group="environment" data-val="indoor-lights" onclick="selectOpt(this);togglePotSize()">
+        <div class="opt-icon">💡</div>
+        <div class="opt-text">
+          <div class="opt-label">Indoor — Grow Lights</div>
+          <div class="opt-desc">Under LED, HID, or fluorescent grow lights</div>
+        </div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt" data-group="environment" data-val="outdoor-container" onclick="selectOpt(this);togglePotSize()">
+        <div class="opt-icon">🪣</div>
+        <div class="opt-text">
+          <div class="opt-label">Outdoor — Container / Pot</div>
+          <div class="opt-desc">Pots, buckets, grow bags, fabric pots</div>
+        </div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt" data-group="environment" data-val="outdoor-ground" onclick="selectOpt(this);togglePotSize()">
+        <div class="opt-icon">🌍</div>
+        <div class="opt-text">
+          <div class="opt-label">Outdoor — In-Ground</div>
+          <div class="opt-desc">Planted directly in garden soil</div>
+        </div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt" data-group="environment" data-val="raised-bed" onclick="selectOpt(this);togglePotSize()">
+        <div class="opt-icon">🪵</div>
+        <div class="opt-text">
+          <div class="opt-label">Raised Bed</div>
+          <div class="opt-desc">Elevated garden bed above ground level</div>
+        </div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt" data-group="environment" data-val="greenhouse" onclick="selectOpt(this);togglePotSize()">
+        <div class="opt-icon">🏡</div>
+        <div class="opt-text">
+          <div class="opt-label">Greenhouse / Polytunnel</div>
+          <div class="opt-desc">Covered outdoor growing structure</div>
+        </div>
+        <div class="opt-check">✓</div>
+      </div>
+    </div>
+
+    <div class="conditional" id="potSizeSection">
+      <div class="section-head">Container / pot size</div>
+      <div class="option-grid cols3">
+        <div class="opt compact" data-group="potSize" data-val="1gal" onclick="selectOpt(this)">
+          <div class="opt-text"><div class="opt-label">1 gal or less</div></div>
+          <div class="opt-check">✓</div>
+        </div>
+        <div class="opt compact" data-group="potSize" data-val="2-3gal" onclick="selectOpt(this)">
+          <div class="opt-text"><div class="opt-label">2–3 gallons</div></div>
+          <div class="opt-check">✓</div>
+        </div>
+        <div class="opt compact" data-group="potSize" data-val="4-5gal" onclick="selectOpt(this)">
+          <div class="opt-text"><div class="opt-label">4–5 gallons</div></div>
+          <div class="opt-check">✓</div>
+        </div>
+        <div class="opt compact" data-group="potSize" data-val="7-10gal" onclick="selectOpt(this)">
+          <div class="opt-text"><div class="opt-label">7–10 gallons</div></div>
+          <div class="opt-check">✓</div>
+        </div>
+        <div class="opt compact" data-group="potSize" data-val="12gal+" onclick="selectOpt(this)">
+          <div class="opt-text"><div class="opt-label">12+ gallons</div></div>
+          <div class="opt-check">✓</div>
+        </div>
+        <div class="opt compact" data-group="potSize" data-val="large-bed" onclick="selectOpt(this)">
+          <div class="opt-text"><div class="opt-label">Large trough</div></div>
+          <div class="opt-check">✓</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-head">Daily sunlight (or grow light hours)</div>
+    <div class="option-grid cols2">
+      <div class="opt compact" data-group="sunlightHours" data-val="under4" onclick="selectOpt(this)">
+        <div class="opt-icon">🌑</div>
+        <div class="opt-text"><div class="opt-label">Under 4 hours</div></div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt compact" data-group="sunlightHours" data-val="4-6" onclick="selectOpt(this)">
+        <div class="opt-icon">🌤</div>
+        <div class="opt-text"><div class="opt-label">4–6 hours</div></div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt compact" data-group="sunlightHours" data-val="6-8" onclick="selectOpt(this)">
+        <div class="opt-icon">☀️</div>
+        <div class="opt-text"><div class="opt-label">6–8 hours</div></div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt compact" data-group="sunlightHours" data-val="8plus" onclick="selectOpt(this)">
+        <div class="opt-icon">🌞</div>
+        <div class="opt-text"><div class="opt-label">8+ hours (full sun)</div></div>
+        <div class="opt-check">✓</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════
+       STEP 3 — GROWTH STAGE
+  ════════════════════════════════════════════════════════ -->
+  <div class="step" id="step3">
+    <div class="step-title">Where is your plant right now?</div>
+    <div class="step-sub">Growth stage determines almost everything — watering needs, fertilizer type, and what actions to take this week.</div>
+
+    <div class="option-grid">
+      <div class="opt" data-group="growthStage" data-val="seedling" onclick="selectOpt(this)">
+        <div class="opt-icon">🌱</div>
+        <div class="opt-text">
+          <div class="opt-label">Seedling</div>
+          <div class="opt-desc">Just sprouted — under 4 inches, cotyledons or first true leaves</div>
+        </div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt" data-group="growthStage" data-val="young-transplant" onclick="selectOpt(this)">
+        <div class="opt-icon">🌿</div>
+        <div class="opt-text">
+          <div class="opt-label">Young Transplant</div>
+          <div class="opt-desc">4–8 inches, recently moved to bigger pot or outdoor ground</div>
+        </div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt" data-group="growthStage" data-val="veg" onclick="selectOpt(this)">
+        <div class="opt-icon">🌲</div>
+        <div class="opt-text">
+          <div class="opt-label">Vegetative Growth</div>
+          <div class="opt-desc">8+ inches, actively pushing leaves and branches — no flowers yet</div>
+        </div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt" data-group="growthStage" data-val="pre-flower" onclick="selectOpt(this)">
+        <div class="opt-icon">🌼</div>
+        <div class="opt-text">
+          <div class="opt-label">Pre-Flower / First Buds</div>
+          <div class="opt-desc">Flower buds just forming, first 1–3 blooms starting to open</div>
+        </div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt" data-group="growthStage" data-val="flowering" onclick="selectOpt(this)">
+        <div class="opt-icon">🌸</div>
+        <div class="opt-text">
+          <div class="opt-label">Actively Flowering</div>
+          <div class="opt-desc">Many flowers open at once, heavy bloom period</div>
+        </div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt" data-group="growthStage" data-val="fruiting" onclick="selectOpt(this)">
+        <div class="opt-icon">🫑</div>
+        <div class="opt-text">
+          <div class="opt-label">Fruiting / Pod Development</div>
+          <div class="opt-desc">Pods set and growing, flowers turning into fruit</div>
+        </div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt" data-group="growthStage" data-val="late-season" onclick="selectOpt(this)">
+        <div class="opt-icon">🍂</div>
+        <div class="opt-text">
+          <div class="opt-label">Late Season / Ripening</div>
+          <div class="opt-desc">Most pods on the plant, ripening, growth slowing down</div>
+        </div>
+        <div class="opt-check">✓</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════
+       STEP 4 — CONDITIONS
+  ════════════════════════════════════════════════════════ -->
+  <div class="step" id="step4">
+    <div class="step-title">Current conditions</div>
+    <div class="step-sub">Temperature, humidity, and recent weather all affect watering frequency, flower drop, and pod set. Be honest here — it changes the advice significantly.</div>
+
+    <div class="section-head">Daytime temperature (where your plants are)</div>
+    <div class="option-grid cols2">
+      <div class="opt compact" data-group="tempRange" data-val="below60" onclick="selectOpt(this)">
+        <div class="opt-icon">🥶</div>
+        <div class="opt-text"><div class="opt-label">Below 60°F / 15°C</div><div class="opt-desc">Cold — peppers are stressed</div></div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt compact" data-group="tempRange" data-val="60-70" onclick="selectOpt(this)">
+        <div class="opt-icon">😐</div>
+        <div class="opt-text"><div class="opt-label">60–70°F / 15–21°C</div><div class="opt-desc">Cool — slower growth</div></div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt compact" data-group="tempRange" data-val="70-80" onclick="selectOpt(this)">
+        <div class="opt-icon">😊</div>
+        <div class="opt-text"><div class="opt-label">70–80°F / 21–27°C</div><div class="opt-desc">Ideal range for peppers</div></div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt compact" data-group="tempRange" data-val="80-90" onclick="selectOpt(this)">
+        <div class="opt-icon">🌡</div>
+        <div class="opt-text"><div class="opt-label">80–90°F / 27–32°C</div><div class="opt-desc">Warm — watch watering</div></div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt compact" data-group="tempRange" data-val="above90" onclick="selectOpt(this)">
+        <div class="opt-icon">🥵</div>
+        <div class="opt-text"><div class="opt-label">90°F+ / 32°C+</div><div class="opt-desc">Hot — flower drop risk</div></div>
+        <div class="opt-check">✓</div>
+      </div>
+    </div>
+
+    <div class="section-head">Humidity level</div>
+    <div class="option-grid cols3">
+      <div class="opt compact" data-group="humidity" data-val="low" onclick="selectOpt(this)">
+        <div class="opt-icon">🏜</div>
+        <div class="opt-text"><div class="opt-label">Low / Dry</div></div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt compact" data-group="humidity" data-val="moderate" onclick="selectOpt(this)">
+        <div class="opt-icon">🌤</div>
+        <div class="opt-text"><div class="opt-label">Moderate</div></div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt compact" data-group="humidity" data-val="high" onclick="selectOpt(this)">
+        <div class="opt-icon">💧</div>
+        <div class="opt-text"><div class="opt-label">High / Humid</div></div>
+        <div class="opt-check">✓</div>
+      </div>
+    </div>
+
+    <div class="section-head">Recent weather pattern</div>
+    <div class="option-grid cols2">
+      <div class="opt compact" data-group="recentWeather" data-val="stable" onclick="selectOpt(this)">
+        <div class="opt-icon">✅</div>
+        <div class="opt-text"><div class="opt-label">Stable / Normal</div></div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt compact" data-group="recentWeather" data-val="heat-wave" onclick="selectOpt(this)">
+        <div class="opt-icon">🔥</div>
+        <div class="opt-text"><div class="opt-label">Heat Wave</div><div class="opt-desc">5+ days of extreme heat</div></div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt compact" data-group="recentWeather" data-val="cold-snap" onclick="selectOpt(this)">
+        <div class="opt-icon">❄️</div>
+        <div class="opt-text"><div class="opt-label">Unexpected Cold Snap</div></div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt compact" data-group="recentWeather" data-val="rainy" onclick="selectOpt(this)">
+        <div class="opt-icon">🌧</div>
+        <div class="opt-text"><div class="opt-label">Extended Rain / Overcast</div></div>
+        <div class="opt-check">✓</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════
+       STEP 5 — WATERING
+  ════════════════════════════════════════════════════════ -->
+  <div class="step" id="step5">
+    <div class="step-title">The watering situation</div>
+    <div class="step-sub">Overwatering kills more pepper plants than anything else. These three questions let us diagnose your watering routine and tell you exactly what to change.</div>
+
+    <div class="section-head">Soil / growing medium</div>
+    <div class="option-grid">
+      <div class="opt" data-group="soilType" data-val="potting-mix" onclick="selectOpt(this)">
+        <div class="opt-icon">🪴</div>
+        <div class="opt-text">
+          <div class="opt-label">Standard Potting Mix</div>
+          <div class="opt-desc">Regular bagged potting soil (Miracle-Gro, Foxfarm, etc.)</div>
+        </div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt" data-group="soilType" data-val="perlite-mix" onclick="selectOpt(this)">
+        <div class="opt-icon">⚪</div>
+        <div class="opt-text">
+          <div class="opt-label">Perlite-Heavy / Fast-Draining</div>
+          <div class="opt-desc">20–30%+ perlite, coco coir blend, or custom well-draining mix</div>
+        </div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt" data-group="soilType" data-val="raised-bed-mix" onclick="selectOpt(this)">
+        <div class="opt-icon">🪵</div>
+        <div class="opt-text">
+          <div class="opt-label">Raised Bed Mix</div>
+          <div class="opt-desc">Mel's mix, commercial raised bed blend, or similar</div>
+        </div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt" data-group="soilType" data-val="garden-soil" onclick="selectOpt(this)">
+        <div class="opt-icon">🌍</div>
+        <div class="opt-text">
+          <div class="opt-label">Native Garden Soil</div>
+          <div class="opt-desc">Unamended or lightly amended ground soil</div>
+        </div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt" data-group="soilType" data-val="clay" onclick="selectOpt(this)">
+        <div class="opt-icon">🧱</div>
+        <div class="opt-text">
+          <div class="opt-label">Heavy / Clay-Based Soil</div>
+          <div class="opt-desc">Dense, slow-draining, clumps and cracks when dry</div>
+        </div>
+        <div class="opt-check">✓</div>
+      </div>
+    </div>
+
+    <div class="section-head">When did you last water?</div>
+    <div class="option-grid cols3">
+      <div class="opt compact" data-group="lastWatered" data-val="today" onclick="selectOpt(this)">
+        <div class="opt-text"><div class="opt-label">Today</div></div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt compact" data-group="lastWatered" data-val="1-2days" onclick="selectOpt(this)">
+        <div class="opt-text"><div class="opt-label">1–2 days ago</div></div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt compact" data-group="lastWatered" data-val="3-4days" onclick="selectOpt(this)">
+        <div class="opt-text"><div class="opt-label">3–4 days ago</div></div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt compact" data-group="lastWatered" data-val="5plus" onclick="selectOpt(this)">
+        <div class="opt-text"><div class="opt-label">5+ days ago</div></div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt compact" data-group="lastWatered" data-val="not-sure" onclick="selectOpt(this)">
+        <div class="opt-text"><div class="opt-label">Not sure</div></div>
+        <div class="opt-check">✓</div>
+      </div>
+    </div>
+
+    <div class="section-head">How does the soil feel right now?</div>
+    <div class="option-grid">
+      <div class="opt compact" data-group="soilMoisture" data-val="soaking" onclick="selectOpt(this)">
+        <div class="opt-icon">💦</div>
+        <div class="opt-text"><div class="opt-label">Soaking Wet / Waterlogged</div><div class="opt-desc">Water pooling in tray, soil squishes when squeezed</div></div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt compact" data-group="soilMoisture" data-val="moist" onclick="selectOpt(this)">
+        <div class="opt-icon">💧</div>
+        <div class="opt-text"><div class="opt-label">Moist Throughout</div><div class="opt-desc">Feels damp 2 inches deep, sticks to fingers slightly</div></div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt compact" data-group="soilMoisture" data-val="slightly-dry" onclick="selectOpt(this)">
+        <div class="opt-icon">🌤</div>
+        <div class="opt-text"><div class="opt-label">Dry on Top, Moist Below</div><div class="opt-desc">Surface looks dry but moist 1–2 inches down</div></div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt compact" data-group="soilMoisture" data-val="dry" onclick="selectOpt(this)">
+        <div class="opt-icon">☀️</div>
+        <div class="opt-text"><div class="opt-label">Dry Throughout</div><div class="opt-desc">Dry even 2 inches deep when you stick a finger in</div></div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt compact" data-group="soilMoisture" data-val="very-dry" onclick="selectOpt(this)">
+        <div class="opt-icon">🏜</div>
+        <div class="opt-text"><div class="opt-label">Very Dry / Cracked</div><div class="opt-desc">Soil pulling away from pot edges, bone dry, pot feels very light</div></div>
+        <div class="opt-check">✓</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════
+       STEP 6 — FERTILIZING
+  ════════════════════════════════════════════════════════ -->
+  <div class="step" id="step6">
+    <div class="step-title">Fertilizing & feeding</div>
+    <div class="step-sub">What you feed — and when — has an enormous impact on plant size, pod count, and heat level. Most growers use the wrong formula at the wrong stage.</div>
+
+    <div class="section-head">Are you currently fertilizing?</div>
+    <div class="option-grid cols2">
+      <div class="opt" data-group="isFertilizing" data-val="yes" onclick="selectOpt(this);toggleFertFields()">
+        <div class="opt-icon">✅</div>
+        <div class="opt-text"><div class="opt-label">Yes, regularly</div><div class="opt-desc">On a consistent feeding schedule</div></div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt" data-group="isFertilizing" data-val="occasionally" onclick="selectOpt(this);toggleFertFields()">
+        <div class="opt-icon">🤷</div>
+        <div class="opt-text"><div class="opt-label">Occasionally</div><div class="opt-desc">When I remember or notice something</div></div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt" data-group="isFertilizing" data-val="no" onclick="selectOpt(this);toggleFertFields()">
+        <div class="opt-icon">❌</div>
+        <div class="opt-text"><div class="opt-label">Not yet</div><div class="opt-desc">Haven't started feeding yet</div></div>
+        <div class="opt-check">✓</div>
+      </div>
+      <div class="opt" data-group="isFertilizing" data-val="not-sure" onclick="selectOpt(this);toggleFertFields()">
+        <div class="opt-icon">❓</div>
+        <div class="opt-text"><div class="opt-label">Not sure</div><div class="opt-desc">Unsure what nutrients are in my soil</div></div>
+        <div class="opt-check">✓</div>
+      </div>
+    </div>
+
+    <div class="conditional" id="fertFields">
+      <div class="section-head">Type of fertilizer you're using</div>
+      <div class="option-grid">
+        <div class="opt compact" data-group="fertilizerType" data-val="balanced" onclick="selectOpt(this)">
+          <div class="opt-icon">⚖️</div>
+          <div class="opt-text"><div class="opt-label">Balanced / All-Purpose</div><div class="opt-desc">10-10-10, 20-20-20, Miracle-Gro All Purpose</div></div>
+          <div class="opt-check">✓</div>
+        </div>
+        <div class="opt compact" data-group="fertilizerType" data-val="high-nitrogen" onclick="selectOpt(this)">
+          <div class="opt-icon">🌿</div>
+          <div class="opt-text"><div class="opt-label">High Nitrogen / Veg Formula</div><div class="opt-desc">High first number — promotes leaf and stem growth</div></div>
+          <div class="opt-check">✓</div>
+        </div>
+        <div class="opt compact" data-group="fertilizerType" data-val="bloom" onclick="selectOpt(this)">
+          <div class="opt-icon">🌸</div>
+          <div class="opt-text"><div class="opt-label">Bloom / Fruit Formula</div><div class="opt-desc">Low N, high P+K (e.g. 5-10-10, Tomato Tone, Tiger Bloom)</div></div>
+          <div class="opt-check">✓</div>
+        </div>
+        <div class="opt compact" data-group="fertilizerType" data-val="organic" onclick="selectOpt(this)">
+          <div class="opt-icon">🌱</div>
+          <div class="opt-text"><div class="opt-label">Organic</div><div class="opt-desc">Fish emulsion, worm castings, compost tea, bone meal, kelp</div></div>
+          <div class="opt-check">✓</div>
+        </div>
+        <div class="opt compact" data-group="fertilizerType" data-val="not-sure" onclick="selectOpt(this)">
+          <div class="opt-icon">❓</div>
+          <div class="opt-text"><div class="opt-label">Not sure of the type</div></div>
+          <div class="opt-check">✓</div>
+        </div>
+      </div>
+
+      <div class="section-head">How often do you feed?</div>
+      <div class="option-grid cols2">
+        <div class="opt compact" data-group="feedingFrequency" data-val="weekly" onclick="selectOpt(this)">
+          <div class="opt-text"><div class="opt-label">Weekly</div></div>
+          <div class="opt-check">✓</div>
+        </div>
+        <div class="opt compact" data-group="feedingFrequency" data-val="biweekly" onclick="selectOpt(this)">
+          <div class="opt-text"><div class="opt-label">Every 2 weeks</div></div>
+          <div class="opt-check">✓</div>
+        </div>
+        <div class="opt compact" data-group="feedingFrequency" data-val="monthly" onclick="selectOpt(this)">
+          <div class="opt-text"><div class="opt-label">Monthly</div></div>
+          <div class="opt-check">✓</div>
+        </div>
+        <div class="opt compact" data-group="feedingFrequency" data-val="rarely" onclick="selectOpt(this)">
+          <div class="opt-text"><div class="opt-label">Rarely / As needed</div></div>
+          <div class="opt-check">✓</div>
+        </div>
+      </div>
+
+      <div class="section-head">When did you last feed?</div>
+      <div class="option-grid cols2">
+        <div class="opt compact" data-group="lastFed" data-val="this-week" onclick="selectOpt(this)">
+          <div class="opt-text"><div class="opt-label">This week</div></div>
+          <div class="opt-check">✓</div>
+        </div>
+        <div class="opt compact" data-group="lastFed" data-val="1-2weeks" onclick="selectOpt(this)">
+          <div class="opt-text"><div class="opt-label">1–2 weeks ago</div></div>
+          <div class="opt-check">✓</div>
+        </div>
+        <div class="opt compact" data-group="lastFed" data-val="month-plus" onclick="selectOpt(this)">
+          <div class="opt-text"><div class="opt-label">More than a month ago</div></div>
+          <div class="opt-check">✓</div>
+        </div>
+        <div class="opt compact" data-group="lastFed" data-val="never" onclick="selectOpt(this)">
+          <div class="opt-text"><div class="opt-label">Never / Can't remember</div></div>
+          <div class="opt-check">✓</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════
+       STEP 7 — PROBLEMS & GOALS
+  ════════════════════════════════════════════════════════ -->
+  <div class="step" id="step7">
+    <div class="step-title">Problems & goals</div>
+    <div class="step-sub">Last step. Tell us what's going wrong (if anything) and what you want to achieve. You can select multiple options on both.</div>
+
+    <div class="section-head">Any of these happening right now? (select all that apply)</div>
+    <div class="option-grid">
+      <div class="opt compact" data-group="problems" data-val="yellowing" onclick="toggleMulti(this)">
+        <div class="opt-icon">🟡</div>
+        <div class="opt-text"><div class="opt-label">Yellowing leaves</div><div class="opt-desc">Lower, older leaves or spreading</div></div>
+        <div class="opt-check square">✓</div>
+      </div>
+      <div class="opt compact" data-group="problems" data-val="wilting" onclick="toggleMulti(this)">
+        <div class="opt-icon">😔</div>
+        <div class="opt-text"><div class="opt-label">Wilting / drooping</div><div class="opt-desc">Leaves sagging even in the morning</div></div>
+        <div class="opt-check square">✓</div>
+      </div>
+      <div class="opt compact" data-group="problems" data-val="spots" onclick="toggleMulti(this)">
+        <div class="opt-icon">🔵</div>
+        <div class="opt-text"><div class="opt-label">Spots, lesions, or damage on leaves</div></div>
+        <div class="opt-check square">✓</div>
+      </div>
+      <div class="opt compact" data-group="problems" data-val="flower-drop" onclick="toggleMulti(this)">
+        <div class="opt-icon">🌸</div>
+        <div class="opt-text"><div class="opt-label">Flowers dropping off</div><div class="opt-desc">Buds or open flowers falling before pods form</div></div>
+        <div class="opt-check square">✓</div>
+      </div>
+      <div class="opt compact" data-group="problems" data-val="no-fruit" onclick="toggleMulti(this)">
+        <div class="opt-icon">🫙</div>
+        <div class="opt-text"><div class="opt-label">Flowers but no pods forming</div><div class="opt-desc">Blooms staying open with nothing setting</div></div>
+        <div class="opt-check square">✓</div>
+      </div>
+      <div class="opt compact" data-group="problems" data-val="ber" onclick="toggleMulti(this)">
+        <div class="opt-icon">🔴</div>
+        <div class="opt-text"><div class="opt-label">Blossom end rot</div><div class="opt-desc">Dark, sunken, leathery bottoms on pods</div></div>
+        <div class="opt-check square">✓</div>
+      </div>
+      <div class="opt compact" data-group="problems" data-val="pests" onclick="toggleMulti(this)">
+        <div class="opt-icon">🐛</div>
+        <div class="opt-text"><div class="opt-label">Pests</div><div class="opt-desc">Visible insects, fine webbing, or chewed damage</div></div>
+        <div class="opt-check square">✓</div>
+      </div>
+      <div class="opt compact" data-group="problems" data-val="stunted" onclick="toggleMulti(this)">
+        <div class="opt-icon">🐢</div>
+        <div class="opt-text"><div class="opt-label">Stunted or very slow growth</div><div class="opt-desc">Plant barely moving despite time and care</div></div>
+        <div class="opt-check square">✓</div>
+      </div>
+      <div class="opt compact" data-group="problems" data-val="healthy" onclick="toggleMulti(this)">
+        <div class="opt-icon">✅</div>
+        <div class="opt-text"><div class="opt-label">None — plant looks healthy!</div></div>
+        <div class="opt-check square">✓</div>
+      </div>
+    </div>
+
+    <div class="section-head">What do you most want to improve? (select all that apply)</div>
+    <div class="option-grid cols2">
+      <div class="opt compact" data-group="goals" data-val="max-pods" onclick="toggleMulti(this)">
+        <div class="opt-icon">🔢</div>
+        <div class="opt-text"><div class="opt-label">Maximize pod count</div></div>
+        <div class="opt-check square">✓</div>
+      </div>
+      <div class="opt compact" data-group="goals" data-val="bigger-plants" onclick="toggleMulti(this)">
+        <div class="opt-icon">🌲</div>
+        <div class="opt-text"><div class="opt-label">Grow bigger, bushier plants</div></div>
+        <div class="opt-check square">✓</div>
+      </div>
+      <div class="opt compact" data-group="goals" data-val="fix-problem" onclick="toggleMulti(this)">
+        <div class="opt-icon">🔧</div>
+        <div class="opt-text"><div class="opt-label">Diagnose and fix a problem</div></div>
+        <div class="opt-check square">✓</div>
+      </div>
+      <div class="opt compact" data-group="goals" data-val="overwinter" onclick="toggleMulti(this)">
+        <div class="opt-icon">❄️</div>
+        <div class="opt-text"><div class="opt-label">Prepare for overwintering</div></div>
+        <div class="opt-check square">✓</div>
+      </div>
+      <div class="opt compact" data-group="goals" data-val="boost-heat" onclick="toggleMulti(this)">
+        <div class="opt-icon">🌶</div>
+        <div class="opt-text"><div class="opt-label">Boost heat / capsaicin level</div></div>
+        <div class="opt-check square">✓</div>
+      </div>
+      <div class="opt compact" data-group="goals" data-val="pod-size" onclick="toggleMulti(this)">
+        <div class="opt-icon">📏</div>
+        <div class="opt-text"><div class="opt-label">Better pod size and quality</div></div>
+        <div class="opt-check square">✓</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAV BUTTONS -->
+  <div class="nav-wrap" id="navWrap">
+    <button class="btn-back invisible" id="prevBtn" onclick="prevStep()">← Back</button>
+    <button class="btn-next" id="nextBtn" onclick="nextStep()">Next →</button>
+  </div>
+
+  <!-- EMAIL GATE -->
+  <div class="email-gate" id="emailGate">
+    <div class="email-card">
+      <div class="eg-icon">🌶️</div>
+      <div class="eg-title">Your personalized plan is ready</div>
+      <div class="eg-sub">Drop your email to generate your AI growing plan — plus get pepper tips from @Pepperplanter delivered to your inbox. Free forever.</div>
+      <div class="email-row">
+        <input type="email" id="emailInput" placeholder="your@email.com" onkeydown="if(event.key==='Enter')submitEmail()">
+        <button class="btn-generate" onclick="submitEmail()">Get My Plan →</button>
+      </div>
+      <div class="email-privacy">No spam. No selling your info. Unsubscribe anytime.</div>
+    </div>
+  </div>
+
+  <!-- LOADING -->
+  <div class="loading-screen" id="loadingScreen">
+    <div class="loading-pepper">🌶️</div>
+    <div class="loading-title">Analyzing your grow setup</div>
+    <div class="loading-sub">Building your personalized pepper plan</div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="results-screen" id="resultsScreen">
+    <div class="results-badge">🌶️ Personalized by AI · @Pepperplanter</div>
+    <div class="results-title" id="resultsTitle">Your Pepper Growing Plan</div>
+    <div class="results-sub">Specific to your plant, stage, and situation right now.</div>
+    <div id="resultCards"></div>
+    <div class="results-footer">
+      <a href="https://www.instagram.com/pepperplanter" target="_blank" rel="noopener" class="btn-insta">
+        📸 Follow @Pepperplanter for daily pepper tips
+      </a>
+      <button class="btn-restart" onclick="restart()">← Start Over with a Different Plant</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── STATE ────────────────────────────────────────────────────────────────────
+let currentStep = 1;
+const TOTAL_STEPS = 7;
+
+const formData = {
+  pepperType: '', specificVariety: '',
+  environment: '', potSize: '', sunlightHours: '',
+  growthStage: '',
+  tempRange: '', humidity: '', recentWeather: '',
+  soilType: '', lastWatered: '', soilMoisture: '',
+  isFertilizing: '', fertilizerType: '', feedingFrequency: '', lastFed: '',
+  problems: [], goals: [],
+};
+
+const STEP_LABELS = ['Pepper Type', 'Growing Setup', 'Growth Stage', 'Conditions', 'Watering', 'Fertilizing', 'Problems & Goals'];
+
+// ── OPTION SELECTION ─────────────────────────────────────────────────────────
+function selectOpt(el) {
+  const group = el.dataset.group;
+  document.querySelectorAll(`[data-group="${group}"]`).forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  formData[group] = el.dataset.val;
+}
+
+function toggleMulti(el) {
+  const group = el.dataset.group;
+  const val = el.dataset.val;
+  el.classList.toggle('selected');
+  if (el.classList.contains('selected')) {
+    if (!formData[group].includes(val)) formData[group].push(val);
+  } else {
+    formData[group] = formData[group].filter(v => v !== val);
+  }
+}
+
+// ── CONDITIONAL SECTIONS ──────────────────────────────────────────────────────
+function togglePotSize() {
+  const env = formData.environment;
+  const show = ['indoor-lights', 'outdoor-container', 'greenhouse'].includes(env);
+  document.getElementById('potSizeSection').classList.toggle('show', show);
+}
+
+function toggleFertFields() {
+  const show = ['yes', 'occasionally'].includes(formData.isFertilizing);
+  document.getElementById('fertFields').classList.toggle('show', show);
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────────
+function updateUI() {
+  const pct = (currentStep / TOTAL_STEPS) * 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('stepLabel').textContent = STEP_LABELS[currentStep - 1];
+  document.getElementById('stepFraction').textContent = `Step ${currentStep} of ${TOTAL_STEPS}`;
+  const back = document.getElementById('prevBtn');
+  back.classList.toggle('invisible', currentStep === 1);
+}
+
+function showStep(n) {
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.getElementById('step' + n).classList.add('active');
+  currentStep = n;
+  updateUI();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function nextStep() {
+  if (currentStep < TOTAL_STEPS) {
+    showStep(currentStep + 1);
+  } else {
+    document.getElementById('step' + currentStep).classList.remove('active');
+    document.getElementById('navWrap').classList.add('hidden');
+    document.getElementById('progressSection').style.display = 'none';
+    document.getElementById('emailGate').classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
+function prevStep() {
+  if (currentStep > 1) showStep(currentStep - 1);
+}
+
+// ── EMAIL & GENERATE ─────────────────────────────────────────────────────────
+function submitEmail() {
+  const email = document.getElementById('emailInput').value.trim();
+  if (!email || !email.includes('@')) {
+    document.getElementById('emailInput').focus();
+    document.getElementById('emailInput').style.borderColor = 'rgba(239,68,68,0.5)';
+    return;
+  }
+  localStorage.setItem('pp_email', email);
+  formData.specificVariety = document.getElementById('specificVariety').value.trim();
+
+  document.getElementById('emailGate').classList.remove('active');
+  document.getElementById('loadingScreen').classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  generatePlan();
+}
+
+async function generatePlan() {
+  try {
+    const res = await fetch('/.netlify/functions/pepper-plan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ inputs: formData }),
+    });
+
+    let data;
+    try { data = await res.json(); } catch { throw new Error('Invalid response from server.'); }
+
+    if (!res.ok || data.error) throw new Error(data.error || `Server error ${res.status}`);
+
+    showResults(data.plan);
+  } catch (err) {
+    showError(err.message);
+  }
+}
+
+// ── RESULTS RENDERING ─────────────────────────────────────────────────────────
+function md(text) {
+  let out = text
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+  const lines = out.split('\n');
+  const result = [];
+  let inList = false;
+
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (line.startsWith('- ') || line.startsWith('• ')) {
+      if (!inList) { result.push('<ul>'); inList = true; }
+      result.push('<li>' + line.slice(2) + '</li>');
+    } else {
+      if (inList) { result.push('</ul>'); inList = false; }
+      if (line) result.push('<p>' + line + '</p>');
+    }
+  }
+  if (inList) result.push('</ul>');
+
+  return result.join('');
+}
+
+function showResults(plan) {
+  document.getElementById('loadingScreen').classList.remove('active');
+
+  const sectionRe = /## (.+?)\n([\s\S]*?)(?=\n## |$)/g;
+  const cards = [];
+  let m;
+  while ((m = sectionRe.exec('\n' + plan)) !== null) {
+    cards.push({ title: m[1].trim(), content: m[2].trim() });
+  }
+  if (!cards.length) cards.push({ title: '🌶️ Your Pepper Plan', content: plan.trim() });
+
+  const variety = formData.specificVariety || '';
+  if (variety) document.getElementById('resultsTitle').textContent = variety + ' — Your Growing Plan';
+
+  document.getElementById('resultCards').innerHTML = cards.map(c => {
+    const isPro = /pro tip|pepperplanter/i.test(c.title);
+    return `<div class="result-card${isPro ? ' pro-tip' : ''}">
+      <div class="result-title">${c.title.replace(/&lt;/g,'<').replace(/&gt;/g,'>')}</div>
+      <div class="result-body">${md(c.content)}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('resultsScreen').classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function showError(msg) {
+  document.getElementById('loadingScreen').classList.remove('active');
+  document.getElementById('resultCards').innerHTML = `
+    <div class="error-card">
+      <strong>Something went wrong:</strong> ${msg}<br><br>
+      Make sure the Netlify function is deployed and <code>ANTHROPIC_API_KEY</code> is set in your Netlify site's environment variables (Site Settings → Environment Variables).
+    </div>`;
+  document.getElementById('resultsScreen').classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function restart() {
+  location.reload();
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+updateUI();
+</script>
+</body>
+</html>
