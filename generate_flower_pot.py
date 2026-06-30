@@ -188,60 +188,73 @@ TRAY_WALL    = 3.5
 
 def build_tray():
     """
-    Cup-shaped tray: solid bottom, outer rim wall, thread ring collar rising
-    from the centre.  Water drips through the pot drain hole, through the
-    thread-ring bore, and pools on the tray floor around the collar.
+    Bowl tray with thread ring rising from the TOP of the bowl.
+    The pot screws down onto the ring from above; water drips into the bowl below.
+    Fixes vs original: (1) solid inner bottom disk added, (2) bore sized to
+    clear the male thread tip (41.5 + 3.0 = 44.5 mm) with 0.3 mm clearance.
     """
     tris = []
 
-    _out_r_bot    = POT_R_BOT + WALL                      # 41.5 – pot base outer radius
-    # Bore must clear the male thread TIP (41.5 + 3.0 = 44.5 mm) + 0.3 mm tip clearance
-    ring_r_in     = _out_r_bot + THREAD_H + 0.3          # 44.8 – bore radius
-    ring_r_out    = ring_r_in + TRAY_WALL                 # 48.3 – ring outer wall
-    tray_r        = ring_r_out + 22                       # 70.3 – wide catchment area
+    _out_r_bot    = POT_R_BOT + WALL                   # 41.5 – pot base outer radius
+    ring_r_in     = _out_r_bot + THREAD_H + 0.3        # 44.8 – bore clears male tip + 0.3 mm
+    ring_r_out    = ring_r_in + TRAY_WALL               # 48.3 – ring outer wall
+    tray_r_out    = ring_r_out + 20                     # 68.3 – generous water catchment
+    tray_r_in     = tray_r_out - TRAY_WALL              # 64.8 – inner bowl radius
     thread_ring_h = THREAD_PITCH * THREAD_TURNS + 4
 
     center = np.array([0.0, 0.0, 0.0])
 
-    # --- solid bottom disk (faces DOWN) – the fix: was missing before ---
-    bot_rim = circle_pts(tray_r, N, 0)
-    tris += fan_triangles(center, bot_rim, flip=True)
+    # --- tray outer cylinder ---
+    bot_outer = circle_pts(tray_r_out, N, 0)
+    top_outer = circle_pts(tray_r_out, N, TRAY_H)
+    tris += tube_triangles(bot_outer, top_outer)
 
-    # --- outer wall ---
-    top_rim = circle_pts(tray_r, N, TRAY_H)
-    tris += tube_triangles(bot_rim, top_rim)
+    # --- tray inner cylinder (inward normal) ---
+    bot_inner = circle_pts(tray_r_in, N, 0)
+    top_inner = circle_pts(tray_r_in, N, TRAY_H)
+    tris += tube_triangles(top_inner, bot_inner)
 
-    # --- top rim face (annulus, faces up) ---
-    top_rim_in = circle_pts(tray_r - TRAY_WALL, N, TRAY_H)
+    # --- tray bottom: outer annulus (wall-thickness ring) ---
     for i in range(N):
         j = (i + 1) % N
-        tris.append([top_rim[i], top_rim_in[j], top_rim_in[i]])
-        tris.append([top_rim[i], top_rim[j],    top_rim_in[j]])
+        tris.append([bot_outer[i], bot_inner[j], bot_inner[i]])
+        tris.append([bot_outer[i], bot_outer[j], bot_inner[j]])
 
-    # --- inner face of outer wall (faces inward) ---
-    bot_rim_in = circle_pts(tray_r - TRAY_WALL, N, 0)
-    tris += tube_triangles(top_rim_in, bot_rim_in)
+    # --- tray bottom: solid inner disk – this was the missing piece ---
+    tris += fan_triangles(center, bot_inner, flip=True)
+
+    # --- top face of tray bowl (annulus from outer wall to thread ring outer) ---
+    top_ring_outer = circle_pts(ring_r_out, N, TRAY_H)
+    for i in range(N):
+        j = (i + 1) % N
+        tris.append([top_outer[i], top_ring_outer[i], top_ring_outer[j]])
+        tris.append([top_outer[i], top_ring_outer[j], top_outer[j]])
 
     # --- thread ring outer wall ---
-    ring_bot_out = circle_pts(ring_r_out, N, 0)
-    ring_top_out = circle_pts(ring_r_out, N, thread_ring_h)
-    tris += tube_triangles(ring_bot_out, ring_top_out)
+    top_ring_top_outer = circle_pts(ring_r_out, N, TRAY_H + thread_ring_h)
+    tris += tube_triangles(top_ring_outer, top_ring_top_outer)
 
-    # --- thread ring cap (faces up) ---
-    ring_top_in = circle_pts(ring_r_in, N, thread_ring_h)
+    # --- thread ring inner wall (inward normal) ---
+    top_ring_inner     = circle_pts(ring_r_in, N, TRAY_H)
+    top_ring_top_inner = circle_pts(ring_r_in, N, TRAY_H + thread_ring_h)
+    tris += tube_triangles(top_ring_top_inner, top_ring_inner)
+
+    # --- thread ring cap ---
     for i in range(N):
         j = (i + 1) % N
-        tris.append([ring_top_out[i], ring_top_in[j], ring_top_in[i]])
-        tris.append([ring_top_out[i], ring_top_out[j], ring_top_in[j]])
+        tris.append([top_ring_top_outer[i], top_ring_top_inner[j], top_ring_top_inner[i]])
+        tris.append([top_ring_top_outer[i], top_ring_top_outer[j], top_ring_top_inner[j]])
 
-    # --- thread ring inner wall (faces inward) ---
-    ring_bot_in = circle_pts(ring_r_in, N, 0)
-    tris += tube_triangles(ring_top_in, ring_bot_in)
+    # --- inner tray floor (annulus from bowl inner wall to thread ring, at z=TRAY_H) ---
+    for i in range(N):
+        j = (i + 1) % N
+        tris.append([top_inner[i], top_ring_inner[i], top_ring_inner[j]])
+        tris.append([top_inner[i], top_ring_inner[j], top_inner[j]])
 
-    # --- female thread inside ring ---
-    # tip = ring_r_in - THREAD_H + 0.3 gives 0.6 mm root clearance from male (41.5 mm)
+    # --- female thread (base at bore wall, tip extends inward) ---
     tris += helix_thread_triangles(ring_r_in, ring_r_in - THREAD_H + 0.3,
-                                   THREAD_Z0, THREAD_PITCH, THREAD_TURNS,
+                                   TRAY_H + THREAD_Z0,
+                                   THREAD_PITCH, THREAD_TURNS,
                                    flip_normal=True)
 
     return make_mesh(tris)
