@@ -194,10 +194,11 @@ def build_tray():
     """
     tris = []
 
-    _out_r_bot    = POT_R_BOT + WALL                   # 41.5 – pot base outer radius
-    ring_r_in     = _out_r_bot - 0.5                    # 41.0 – bore clearance
-    ring_r_out    = ring_r_in + TRAY_WALL + THREAD_H   # 47.5 – ring outer wall
-    tray_r        = ring_r_out + 22                     # 69.5 – wide catchment area
+    _out_r_bot    = POT_R_BOT + WALL                      # 41.5 – pot base outer radius
+    # Bore must clear the male thread TIP (41.5 + 3.0 = 44.5 mm) + 0.3 mm tip clearance
+    ring_r_in     = _out_r_bot + THREAD_H + 0.3          # 44.8 – bore radius
+    ring_r_out    = ring_r_in + TRAY_WALL                 # 48.3 – ring outer wall
+    tray_r        = ring_r_out + 22                       # 70.3 – wide catchment area
     thread_ring_h = THREAD_PITCH * THREAD_TURNS + 4
 
     center = np.array([0.0, 0.0, 0.0])
@@ -238,7 +239,8 @@ def build_tray():
     tris += tube_triangles(ring_top_in, ring_bot_in)
 
     # --- female thread inside ring ---
-    tris += helix_thread_triangles(ring_r_in, ring_r_in - THREAD_H + 0.4,
+    # tip = ring_r_in - THREAD_H + 0.3 gives 0.6 mm root clearance from male (41.5 mm)
+    tris += helix_thread_triangles(ring_r_in, ring_r_in - THREAD_H + 0.3,
                                    THREAD_Z0, THREAD_PITCH, THREAD_TURNS,
                                    flip_normal=True)
 
